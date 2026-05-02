@@ -6,7 +6,6 @@ let settingsGear: HTMLDivElement | null = null;
 let settingsPanel: HTMLDivElement | null = null;
 let progressBar: HTMLDivElement | null = null;
 let progressBarInner: HTMLDivElement | null = null;
-let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
 let isDragging = false;
 let dragStartX = 0;
 let dragStartY = 0;
@@ -420,11 +419,8 @@ function handleMouseEnter() {
   if (isDragging) return;
   if (isSemiHidden) {
     slideOut();
-    // Gear shows in animation callback (correct position)
-  } else {
-    showGear();
   }
-  hoverTimeout = setTimeout(() => showSettings(), 300);
+  showGear();
 }
 
 function updateGearPosition() {
