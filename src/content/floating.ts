@@ -445,11 +445,10 @@ export function createFloatingButton(
 
   document.documentElement.appendChild(floatBtn);
 
-  // Start fully visible on right side
-  isSemiHidden = false;
-  floatBtn.style.left = `${getViewportW() - 54}px`;
-  floatBtn.style.right = "auto";
-  floatBtn.style.opacity = String(currentOpacity);
+  // Start semi-hidden on left side
+  isSemiHidden = true;
+  hideSide = "left";
+  semiHide();
 
   // Close settings on click outside
   document.addEventListener("click", handleDocumentClick);
