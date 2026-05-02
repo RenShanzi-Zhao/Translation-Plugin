@@ -2,6 +2,7 @@ export type TranslateCallback = (targetLang: string) => void;
 export type RemoveCallback = () => void;
 
 let floatBtn: HTMLDivElement | null = null;
+let settingsGear: HTMLDivElement | null = null;
 let settingsPanel: HTMLDivElement | null = null;
 let progressBar: HTMLDivElement | null = null;
 let progressBarInner: HTMLDivElement | null = null;
@@ -11,20 +12,24 @@ let dragStartX = 0;
 let dragStartY = 0;
 let btnStartX = 0;
 let btnStartY = 0;
+let hasMoved = false;
+let isSemiHidden = true;
 
 let currentTargetLang = "zh-CN";
 let currentShortcut = "Ctrl+Shift+A";
 let currentOpacity = 0.6;
-let currentIcon: string | null = null; // base64 data URL or null for default
-let isEdgeHidden = false;
-let edgeStage: 0 | 1 | 2 = 0; // 0=normal, 1=half hidden, 2=mostly hidden
-let edgeSide: "left" | "right" | null = null;
-const EDGE_STAGE1_THRESHOLD = 10;
-const EDGE_STAGE2_THRESHOLD = 30;
+let currentIcon: string | null = null;
 
 const TRANSLATE_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M3 5h12M9 3v2m1.048 3.5A18.024 18.024 0 003.186 13m2.87-5.5a18.02 18.02 0 005.89 8.243M12 21l3.75-7.5L19.5 21M14.25 18h5.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
+
+const GEAR_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/>
+  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="2"/>
+</svg>`;
+
+// ─── Settings persistence ───
 
 function loadSettings() {
   try {
@@ -50,6 +55,8 @@ function saveSettings() {
   } catch {}
 }
 
+// ─── Icon ───
+
 function applyIcon() {
   if (!floatBtn) return;
   if (currentIcon) {
@@ -62,6 +69,8 @@ function applyIcon() {
     floatBtn.style.backgroundImage = "none";
   }
 }
+
+// ─── Progress bar ───
 
 function createProgressBar() {
   if (progressBar) return;
@@ -88,6 +97,59 @@ export function markProgressDone() {
     progressBarInner = null;
   }, 1500);
 }
+
+// ─── Semi-hide behavior ───
+
+function semiHide() {
+  if (!floatBtn || !isSemiHidden) return;
+  const btnW = 48;
+  floatBtn.style.left = `${window.innerWidth - btnW * 0.3}px`;
+  floatBtn.style.right = "auto";
+  floatBtn.style.opacity = String(currentOpacity);
+}
+
+function slideOut() {
+  if (!floatBtn) return;
+  const btnW = 48;
+  floatBtn.style.left = `${window.innerWidth - btnW - 6}px`;
+  floatBtn.style.right = "auto";
+  floatBtn.style.opacity = "1";
+}
+
+// ─── Settings gear icon ───
+
+function createSettingsGear() {
+  if (settingsGear) return;
+  settingsGear = document.createElement("div");
+  settingsGear.className = "imm-settings-gear";
+  settingsGear.innerHTML = GEAR_SVG;
+  settingsGear.title = "设置";
+  settingsGear.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleSettings();
+  });
+  settingsGear.addEventListener("mousedown", (e) => e.stopPropagation());
+  document.documentElement.appendChild(settingsGear);
+}
+
+function positionGear() {
+  if (!floatBtn || !settingsGear) return;
+  const rect = floatBtn.getBoundingClientRect();
+  settingsGear.style.left = `${rect.left + rect.width / 2 - 14}px`;
+  settingsGear.style.top = `${rect.bottom + 6}px`;
+}
+
+function showGear() {
+  createSettingsGear();
+  positionGear();
+  settingsGear?.classList.add("visible");
+}
+
+function hideGear() {
+  settingsGear?.classList.remove("visible");
+}
+
+// ─── Settings panel ───
 
 function createSettingsPanel(): HTMLDivElement {
   const panel = document.createElement("div");
@@ -140,7 +202,7 @@ function createSettingsPanel(): HTMLDivElement {
   opacitySlider.addEventListener("input", () => {
     currentOpacity = parseInt(opacitySlider.value) / 100;
     opacityVal.textContent = `${opacitySlider.value}%`;
-    if (floatBtn && edgeStage === 0) {
+    if (floatBtn && !isSemiHidden) {
       floatBtn.style.opacity = String(currentOpacity);
     }
     saveSettings();
@@ -192,7 +254,7 @@ function createSettingsPanel(): HTMLDivElement {
     if (onRemoveCallback) onRemoveCallback();
   });
 
-  // Prevent clicks inside panel from bubbling to document
+  // Prevent clicks inside panel from bubbling
   panel.addEventListener("mousedown", (e) => e.stopPropagation());
   panel.addEventListener("click", (e) => e.stopPropagation());
 
@@ -210,12 +272,13 @@ function showSettings() {
 
   const rect = floatBtn.getBoundingClientRect();
   const panelWidth = 220;
-  let left = rect.left - panelWidth - 10;
-  if (left < 10) left = rect.right + 10;
+  let left = rect.left + rect.width / 2 - panelWidth / 2;
+  if (left < 10) left = 10;
+  if (left + panelWidth > window.innerWidth - 10) left = window.innerWidth - panelWidth - 10;
 
-  let top = rect.top;
-  if (top + 250 > window.innerHeight) {
-    top = window.innerHeight - 260;
+  let top = rect.bottom + 40;
+  if (top + 280 > window.innerHeight) {
+    top = rect.top - 290;
   }
   if (top < 10) top = 10;
 
@@ -228,23 +291,26 @@ function hideSettings() {
   settingsPanel?.classList.remove("visible");
 }
 
-function isSettingsVisible(): boolean {
-  return settingsPanel?.classList.contains("visible") ?? false;
-}
-
-function handleDocumentClick(e: MouseEvent) {
-  const target = e.target as Node;
-  if (settingsPanel?.contains(target)) return;
-  if (floatBtn?.contains(target)) return;
-  hideSettings();
-  if (isEdgeHidden && edgeStage === 2) {
-    slideBack();
+function toggleSettings() {
+  if (settingsPanel?.classList.contains("visible")) {
+    hideSettings();
+  } else {
+    showSettings();
   }
 }
+
+// ─── Close on outside click ───
+
+function handleDocumentClick() {
+  hideSettings();
+}
+
+// ─── Drag & interaction ───
 
 function handleMouseDown(e: MouseEvent) {
   if (e.button !== 0) return;
   isDragging = false;
+  hasMoved = false;
   dragStartX = e.clientX;
   dragStartY = e.clientY;
   const rect = floatBtn!.getBoundingClientRect();
@@ -261,11 +327,10 @@ function handleMouseMove(e: MouseEvent) {
 
   if (!isDragging && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
     isDragging = true;
+    hasMoved = true;
     hideSettings();
-    edgeStage = 0;
-    isEdgeHidden = false;
-    edgeSide = null;
-    floatBtn!.classList.remove("edge-hidden");
+    hideGear();
+    isSemiHidden = false;
   }
 
   if (isDragging) {
@@ -275,6 +340,7 @@ function handleMouseMove(e: MouseEvent) {
     floatBtn!.style.top = `${newTop}px`;
     floatBtn!.style.right = "auto";
     floatBtn!.style.bottom = "auto";
+    floatBtn!.style.opacity = "1";
   }
 }
 
@@ -282,93 +348,63 @@ function handleMouseUp() {
   document.removeEventListener("mousemove", handleMouseMove);
   document.removeEventListener("mouseup", handleMouseUp);
 
-  if (!isDragging) {
+  if (!hasMoved) {
+    // Click — translate
     if (onTranslateCallback) onTranslateCallback(currentTargetLang);
   } else {
-    snapToEdge();
+    // After drag — check if near right edge to re-enable semi-hide
+    const rect = floatBtn!.getBoundingClientRect();
+    if (rect.right > window.innerWidth - 20) {
+      isSemiHidden = true;
+      semiHide();
+    } else {
+      isSemiHidden = false;
+    }
   }
-}
-
-function snapToEdge() {
-  if (!floatBtn) return;
-  const rect = floatBtn.getBoundingClientRect();
-  const btnW = rect.width;
-  const winW = window.innerWidth;
-
-  if (rect.left < EDGE_STAGE2_THRESHOLD) {
-    // Snap to left edge — stage 2: mostly hidden
-    floatBtn.style.left = `${-btnW * 0.8}px`;
-    floatBtn.style.right = "auto";
-    floatBtn.classList.add("edge-hidden");
-    isEdgeHidden = true;
-    edgeStage = 2;
-    edgeSide = "left";
-  } else if (rect.right > winW - EDGE_STAGE2_THRESHOLD) {
-    // Snap to right edge — stage 2: mostly hidden
-    floatBtn.style.left = `${winW - btnW * 0.2}px`;
-    floatBtn.style.right = "auto";
-    floatBtn.classList.add("edge-hidden");
-    isEdgeHidden = true;
-    edgeStage = 2;
-    edgeSide = "right";
-  } else {
-    floatBtn.classList.remove("edge-hidden");
-    isEdgeHidden = false;
-    edgeStage = 0;
-    edgeSide = null;
-  }
-}
-
-// Slide to stage 1 (half visible) on hover
-function slideToStage1() {
-  if (!floatBtn) return;
-  const btnW = floatBtn.getBoundingClientRect().width;
-
-  if (edgeSide === "left") {
-    floatBtn.style.left = `${-btnW / 2}px`;
-  } else if (edgeSide === "right") {
-    floatBtn.style.left = `${window.innerWidth - btnW / 2}px`;
-  }
-  floatBtn.classList.add("edge-hidden");
-  edgeStage = 1;
-}
-
-// Slide back to stage 2 (mostly hidden)
-function slideBack() {
-  if (!floatBtn) return;
-  const btnW = floatBtn.getBoundingClientRect().width;
-
-  if (edgeSide === "left") {
-    floatBtn.style.left = `${-btnW * 0.8}px`;
-  } else if (edgeSide === "right") {
-    floatBtn.style.left = `${window.innerWidth - btnW * 0.2}px`;
-  }
-  floatBtn.classList.add("edge-hidden");
-  edgeStage = 2;
 }
 
 function handleMouseEnter() {
   if (isDragging) return;
-  if (isEdgeHidden) {
-    slideToStage1();
+  if (isSemiHidden) {
+    slideOut();
   }
-  hoverTimeout = setTimeout(() => showSettings(), 300);
+  showGear();
 }
 
 function handleMouseLeave() {
-  if (hoverTimeout) {
-    clearTimeout(hoverTimeout);
-    hoverTimeout = null;
-  }
+  // Delay to allow moving to gear or settings panel
   setTimeout(() => {
-    if (!settingsPanel?.matches(":hover") && !floatBtn?.matches(":hover")) {
+    const overBtn = floatBtn?.matches(":hover") ?? false;
+    const overGear = settingsGear?.matches(":hover") ?? false;
+    const overPanel = settingsPanel?.matches(":hover") ?? false;
+
+    if (!overBtn && !overGear && !overPanel) {
+      hideGear();
       hideSettings();
-      if (isEdgeHidden && edgeStage === 1) {
-        slideBack();
+      if (isSemiHidden) {
+        semiHide();
       }
     }
   }, 200);
 }
+
+function handleGearMouseLeave() {
+  setTimeout(() => {
+    const overBtn = floatBtn?.matches(":hover") ?? false;
+    const overGear = settingsGear?.matches(":hover") ?? false;
+    const overPanel = settingsPanel?.matches(":hover") ?? false;
+
+    if (!overBtn && !overGear && !overPanel) {
+      hideGear();
+      hideSettings();
+      if (isSemiHidden) {
+        semiHide();
+      }
+    }
+  }, 200);
+}
+
+// ─── Public API ───
 
 export function createFloatingButton(
   onTranslate: TranslateCallback,
@@ -380,9 +416,7 @@ export function createFloatingButton(
 
   floatBtn = document.createElement("div");
   floatBtn.className = "imm-float-btn";
-  floatBtn.title = "点击翻译 | 悬停设置";
-  floatBtn.style.opacity = String(currentOpacity);
-
+  floatBtn.title = "点击翻译 | 悬停显示设置";
   applyIcon();
 
   floatBtn.addEventListener("mousedown", handleMouseDown);
@@ -391,6 +425,10 @@ export function createFloatingButton(
   floatBtn.addEventListener("click", (e) => e.stopPropagation());
 
   document.documentElement.appendChild(floatBtn);
+
+  // Start semi-hidden
+  isSemiHidden = true;
+  semiHide();
 
   // Close settings on click outside
   document.addEventListener("click", handleDocumentClick);
