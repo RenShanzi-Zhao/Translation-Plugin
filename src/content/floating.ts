@@ -316,6 +316,13 @@ function toggleSettings() {
 
 function handleDocumentClick() {
   hideSettings();
+  // Check if mouse is still over button — if not, return to semi-hide
+  if (!floatBtn?.matches(":hover")) {
+    hideGear();
+    if (isSemiHidden) {
+      semiHide();
+    }
+  }
 }
 
 // ─── Drag & interaction ───
