@@ -99,13 +99,17 @@ export function markProgressDone() {
   }, 1500);
 }
 
+function getViewportW(): number {
+  return document.documentElement.clientWidth;
+}
+
 // ─── Semi-hide behavior ───
 
 function semiHide() {
   if (!floatBtn || !isSemiHidden) return;
   const btnW = 48;
   if (hideSide === "right") {
-    floatBtn.style.left = `${window.innerWidth - btnW * 0.3}px`;
+    floatBtn.style.left = `${getViewportW() - btnW * 0.3}px`;
   } else {
     floatBtn.style.left = `${-btnW * 0.7}px`;
   }
@@ -117,7 +121,7 @@ function slideOut() {
   if (!floatBtn) return;
   const btnW = 48;
   if (hideSide === "right") {
-    floatBtn.style.left = `${window.innerWidth - btnW - 6}px`;
+    floatBtn.style.left = `${getViewportW() - btnW - 6}px`;
   } else {
     floatBtn.style.left = "6px";
   }
@@ -343,7 +347,8 @@ function handleMouseMove(e: MouseEvent) {
   }
 
   if (isDragging) {
-    const newLeft = Math.max(0, Math.min(window.innerWidth - 48, btnStartX + dx));
+    const vw = getViewportW();
+    const newLeft = Math.max(0, Math.min(vw - 48, btnStartX + dx));
     const newTop = Math.max(0, Math.min(window.innerHeight - 48, btnStartY + dy));
     floatBtn!.style.left = `${newLeft}px`;
     floatBtn!.style.top = `${newTop}px`;
@@ -362,12 +367,13 @@ function handleMouseUp() {
     if (onTranslateCallback) onTranslateCallback(currentTargetLang);
   } else {
     // After drag — check if near either edge to re-enable semi-hide
+    const vw = getViewportW();
     const rect = floatBtn!.getBoundingClientRect();
     if (rect.left < 20) {
       hideSide = "left";
       isSemiHidden = true;
       semiHide();
-    } else if (rect.right > window.innerWidth - 20) {
+    } else if (rect.right > vw - 20) {
       hideSide = "right";
       isSemiHidden = true;
       semiHide();
@@ -439,9 +445,11 @@ export function createFloatingButton(
 
   document.documentElement.appendChild(floatBtn);
 
-  // Start semi-hidden
-  isSemiHidden = true;
-  semiHide();
+  // Start fully visible on right side
+  isSemiHidden = false;
+  floatBtn.style.left = `${getViewportW() - 54}px`;
+  floatBtn.style.right = "auto";
+  floatBtn.style.opacity = String(currentOpacity);
 
   // Close settings on click outside
   document.addEventListener("click", handleDocumentClick);
