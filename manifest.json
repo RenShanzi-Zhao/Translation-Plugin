@@ -1,15 +1,22 @@
 {
   "manifest_version": 3,
   "name": "Immersive Translator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "沉浸式双语翻译扩展",
   "permissions": ["storage", "activeTab", "scripting"],
   "action": {
-    "default_popup": "popup/index.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
+    }
+  },
+  "commands": {
+    "translate": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+A"
+      },
+      "description": "翻译当前页面"
     }
   },
   "background": {
@@ -20,6 +27,7 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content/index.js"],
+      "css": ["content/floating.css"],
       "run_at": "document_idle"
     }
   ],

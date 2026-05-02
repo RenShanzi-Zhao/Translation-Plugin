@@ -4,11 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "tsx scripts/build.ts",
-    "build:popup": "vite build --config vite.config.ts",
     "build:background": "vite build --config vite.config.ts --mode background",
-    "build:content": "vite build --config vite.config.ts --mode content"
+    "build:content": "vite build --config vite.config.ts"
   },
   "devDependencies": {
     "typescript": "^5.4.0",
