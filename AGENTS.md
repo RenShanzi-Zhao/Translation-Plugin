@@ -9,8 +9,8 @@ Edge browser translation extension (MVP). Provides immersive bilingual reading b
 - **Language:** TypeScript
 - **Build:** Vite (multi-entry: background ES module, content IIFE)
 - **Extension spec:** Manifest V3
-- **UI:** Draggable floating button injected by content script (no popup)
-- **Storage:** Chrome Storage API + localStorage for floating button settings
+- **UI:** Draggable floating button injected by content script (no popup, no options page)
+- **Storage:** `localStorage` for floating button UI settings
 - **Translation:** OpenAI-compatible LLM API (configurable via `.env`)
 
 ## Developer Commands
@@ -41,7 +41,7 @@ src/
   content/
     index.ts          # Main entry: batch orchestration, floating button init, lazy loading, SPA monitoring
     extract.ts        # Paragraph extraction with filtering
-    floating.ts       # Floating button: drag, hover settings, keyboard shortcut, progress bar
+    floating.ts       # Floating button: drag, hover gear, settings panel, keyboard shortcut, progress bar
     floating.css      # Floating button and settings panel styles
     inject.ts         # Translation block insertion/removal
     selectors.ts      # Content area detection (semantic + heuristic scoring)
@@ -68,7 +68,7 @@ API key is baked into the build via `import.meta.env`. For production, switch to
 - **Keyboard shortcut** configurable via settings panel, default `Ctrl+Shift+A`. Also registered in manifest `commands`.
 - Position uses `document.documentElement.clientWidth` (not `window.innerWidth`) to avoid scrollbar offset issues.
 - Slide animation uses JS `requestAnimationFrame` with easeOut (not CSS transition on `left`) to prevent hover race conditions during semi-hide slide-out.
-- `isDragging` flag is reset to `false` in `handleMouseUp` after drag ends.
+- `isDragging` flag must be reset to `false` in `handleMouseUp` after drag ends.
 - Content Script identifies main content area via semantic selectors (`article`, `main`, `[role="main"]`, etc.) then falls back to heuristic scoring.
 - Translatable nodes: `p`, `li`, `blockquote`, `h1-h6`. Skip `code`, `pre`, `nav`, `footer`, `aside`, and nodes with nav/sidebar/footer/menu class names.
 - Paragraph filter: min 15 chars, visible, not high link density, not in excluded regions.
