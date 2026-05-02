@@ -39,17 +39,23 @@ src/
     index.ts          # Service worker entry, message handler
     translate.ts      # LLM API call, prompt construction, response parsing
   content/
-    index.ts          # Main entry: batch orchestration, floating button init, lazy loading, SPA monitoring
+    index.ts          # Main entry: orchestrates translation, init floating button, lazy loading, SPA
     extract.ts        # Paragraph extraction with filtering
-    floating.ts       # Floating button: drag, hover gear, settings panel, keyboard shortcut, progress bar
-    floating.css      # Floating button and settings panel styles
     inject.ts         # Translation block insertion/removal
     selectors.ts      # Content area detection (semantic + heuristic scoring)
+    batching.ts       # Batch splitting logic
+    orchestrator.ts   # Batch translation dispatch with concurrency control + type-safe response handling
+    lazyTranslation.ts  # IntersectionObserver controller for viewport lazy loading
+    spaMonitoring.ts  # MutationObserver controller for SPA dynamic content
+    floating.ts       # Floating button: drag, hover gear, settings panel, keyboard shortcut, progress bar
+    floatingSettings.ts  # Settings panel UI, load/save settings, FloatingSettingsState type
+    floatingProgress.ts  # Progress bar creation and updates
+    floatingShortcut.ts  # Keyboard shortcut formatting and binding
+    floating.css      # Floating button and settings panel styles
   shared/
     constants.ts      # DOM attrs, batch limits, excluded tags/selectors
     messaging.ts      # Chrome messaging wrappers
-    types.ts          # TranslateItem, TranslationResult, message types
-```
+    types.ts          # TranslateItem, TranslationResult, message types, BgResponse
 
 ## Environment Configuration
 
@@ -69,6 +75,7 @@ API key is baked into the build via `import.meta.env`. For production, switch to
 - Position uses `document.documentElement.clientWidth` (not `window.innerWidth`) to avoid scrollbar offset issues.
 - Slide animation uses JS `requestAnimationFrame` with easeOut (not CSS transition on `left`) to prevent hover race conditions during semi-hide slide-out.
 - `isDragging` flag must be reset to `false` in `handleMouseUp` after drag ends.
+- `showGear()` is called inside `slideOut()` animation callback only when `floatBtn?.matches(":hover")` — gear appears after slide animation, not before.
 - Content Script identifies main content area via semantic selectors (`article`, `main`, `[role="main"]`, etc.) then falls back to heuristic scoring.
 - Translatable nodes: `p`, `li`, `blockquote`, `h1-h6`. Skip `code`, `pre`, `nav`, `footer`, `aside`, and nodes with nav/sidebar/footer/menu class names.
 - Paragraph filter: min 15 chars, visible, not high link density, not in excluded regions.
@@ -78,6 +85,8 @@ API key is baked into the build via `import.meta.env`. For production, switch to
 - Viewport lazy loading via IntersectionObserver (200px root margin).
 - SPA dynamic content monitoring via MutationObserver (500ms debounce).
 - Progress bar at top of page during translation (blue → green when done).
+- `handleRemove()` in `index.ts` also resets lazy translation controller and stops SPA monitoring.
+- `orchestrator.ts` uses `isTranslateResult()` type guard for safe response handling (BgResponse discriminated union).
 
 ## Translation Flow
 
