@@ -143,7 +143,13 @@ function slideOut() {
   const btnW = 48;
   const current = parseFloat(floatBtn.style.left) || -btnW * 0.7;
   const target = hideSide === "right" ? getViewportW() - btnW - 6 : 6;
-  animateLeft(current, target, 250, () => { updateGearPosition(); });
+  animateLeft(current, target, 250, () => {
+    isAnimating = false;
+    // Only show gear if mouse is still over button (user didn't leave during animation)
+    if (floatBtn?.matches(":hover")) {
+      showGear();
+    }
+  });
   floatBtn.style.right = "auto";
   floatBtn.style.opacity = "1";
 }
@@ -413,8 +419,11 @@ function handleMouseEnter() {
   if (isDragging) return;
   if (isSemiHidden) {
     slideOut();
+    // Gear shows in animation callback (correct position)
+  } else {
+    showGear();
   }
-  showGear();
+  hoverTimeout = setTimeout(() => showSettings(), 300);
 }
 
 function updateGearPosition() {
