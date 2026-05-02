@@ -3,7 +3,7 @@ import { findMainContentContainer } from "./selectors";
 import { extractTranslatableNodes, buildTranslateItems } from "./extract";
 import { injectTranslations, removeAllTranslations, hasExistingTranslations, markBatchFailed } from "./inject";
 import { sendToBackground } from "../shared/messaging";
-import { MAX_BATCH_ITEMS, MAX_BATCH_CHARS, MAX_CONCURRENT_BATCHES } from "../shared/constants";
+import { MAX_BATCH_ITEMS, MAX_BATCH_CHARS, MAX_CONCURRENT_BATCHES, TRANSLATED_ATTR } from "../shared/constants";
 import type { PopupMessage, TranslateItem, TranslationResult } from "../shared/types";
 
 let isTranslating = false;
@@ -169,3 +169,79 @@ onMessage(async (message: PopupMessage) => {
     });
   }
 });
+
+let observer: IntersectionObserver | null = null;
+let pendingNodes: HTMLElement[] = [];
+let nodeMapRef: Map<string, HTMLElement> = new Map();
+
+function setupLazyTranslation(targetLang: string) {
+  const container = findMainContentContainer();
+  if (!container) return;
+
+  const nodes = extractTranslatableNodes(container);
+  if (nodes.length === 0) return;
+
+  const { items, nodeMap } = buildTranslateItems(nodes);
+  nodeMapRef = nodeMap;
+
+  const itemMap = new Map<string, TranslateItem>();
+  for (const item of items) {
+    itemMap.set(item.id, item);
+  }
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const node = entry.target as HTMLElement;
+          const id = Array.from(nodeMap.entries()).find(([_, n]) => n === node)?.[0];
+          if (id) {
+            const item = itemMap.get(id);
+            if (item) pendingNodes.push(node);
+          }
+          observer?.unobserve(node);
+        }
+      }
+
+      processLazyBatch(targetLang);
+    },
+    { rootMargin: "200px" }
+  );
+
+  for (const node of nodes) {
+    if (!node.hasAttribute(TRANSLATED_ATTR)) {
+      observer.observe(node);
+    }
+  }
+}
+
+async function processLazyBatch(targetLang: string) {
+  if (isTranslating || pendingNodes.length === 0) return;
+
+  const batch: TranslateItem[] = [];
+  const batchNodes: HTMLElement[] = [];
+
+  while (pendingNodes.length > 0 && batch.length < MAX_BATCH_ITEMS) {
+    const node = pendingNodes.shift()!;
+    const id = Array.from(nodeMapRef.entries()).find(([_, n]) => n === node)?.[0];
+    if (id && !node.hasAttribute(TRANSLATED_ATTR)) {
+      batch.push({ id, text: node.textContent?.trim() || "" });
+      batchNodes.push(node);
+    }
+  }
+
+  if (batch.length === 0) return;
+
+  isTranslating = true;
+  try {
+    const results = await translateOneBatch(batch, "auto", targetLang);
+    injectTranslations(results, nodeMapRef);
+  } catch {
+    markBatchFailed(batch, nodeMapRef);
+  } finally {
+    isTranslating = false;
+    if (pendingNodes.length > 0) {
+      processLazyBatch(targetLang);
+    }
+  }
+}
