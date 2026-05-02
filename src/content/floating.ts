@@ -14,6 +14,14 @@ let btnStartY = 0;
 
 let currentTargetLang = "zh-CN";
 let currentShortcut = "Ctrl+Shift+A";
+let currentOpacity = 0.6;
+let isEdgeHidden = false;
+let edgeSide: "left" | "right" | null = null;
+const EDGE_THRESHOLD = 10;
+
+const TRANSLATE_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M3 5h12M9 3v2m1.048 3.5A18.024 18.024 0 003.186 13m2.87-5.5a18.02 18.02 0 005.89 8.243M12 21l3.75-7.5L19.5 21M14.25 18h5.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
 
 function loadSettings() {
   try {
@@ -22,6 +30,7 @@ function loadSettings() {
       const s = JSON.parse(saved);
       if (s.targetLang) currentTargetLang = s.targetLang;
       if (s.shortcut) currentShortcut = s.shortcut;
+      if (typeof s.opacity === "number") currentOpacity = s.opacity;
     }
   } catch {}
 }
@@ -31,6 +40,7 @@ function saveSettings() {
     localStorage.setItem("imm-settings", JSON.stringify({
       targetLang: currentTargetLang,
       shortcut: currentShortcut,
+      opacity: currentOpacity,
     }));
   } catch {}
 }
@@ -71,6 +81,8 @@ function createSettingsPanel(): HTMLDivElement {
       <option value="zh-CN">英文 → 中文</option>
       <option value="en">中文 → 英文</option>
     </select>
+    <label class="imm-setting-label">透明度 <span id="imm-opacity-val">${Math.round(currentOpacity * 100)}%</span></label>
+    <input type="range" min="20" max="100" value="${Math.round(currentOpacity * 100)}" id="imm-opacity-slider" style="width:100%;margin:4px 0" />
     <label class="imm-setting-label">快捷键</label>
     <input type="text" class="imm-shortcut-input" id="imm-shortcut-input" readonly />
     <div class="imm-btn-row">
@@ -89,8 +101,20 @@ function createSettingsPanel(): HTMLDivElement {
   langSelect.value = currentTargetLang;
   shortcutInput.value = currentShortcut;
 
+  const opacitySlider = panel.querySelector("#imm-opacity-slider") as HTMLInputElement;
+  const opacityVal = panel.querySelector("#imm-opacity-val") as HTMLSpanElement;
+
   langSelect.addEventListener("change", () => {
     currentTargetLang = langSelect.value;
+    saveSettings();
+  });
+
+  opacitySlider.addEventListener("input", () => {
+    currentOpacity = parseInt(opacitySlider.value) / 100;
+    opacityVal.textContent = `${opacitySlider.value}%`;
+    if (floatBtn && !isEdgeHidden) {
+      floatBtn.style.opacity = String(currentOpacity);
+    }
     saveSettings();
   });
 
@@ -192,11 +216,68 @@ function handleMouseUp() {
 
   if (!isDragging) {
     if (onTranslateCallback) onTranslateCallback(currentTargetLang);
+  } else {
+    snapToEdge();
   }
+}
+
+function snapToEdge() {
+  if (!floatBtn) return;
+  const rect = floatBtn.getBoundingClientRect();
+  const btnW = rect.width;
+  const winW = window.innerWidth;
+
+  if (rect.left < EDGE_THRESHOLD) {
+    // Snap to left edge, hide left half
+    floatBtn.style.left = `${-btnW / 2}px`;
+    floatBtn.style.right = "auto";
+    floatBtn.classList.add("edge-hidden");
+    isEdgeHidden = true;
+    edgeSide = "left";
+  } else if (rect.right > winW - EDGE_THRESHOLD) {
+    // Snap to right edge, hide right half
+    floatBtn.style.left = `${winW - btnW / 2}px`;
+    floatBtn.style.right = "auto";
+    floatBtn.classList.add("edge-hidden");
+    isEdgeHidden = true;
+    edgeSide = "right";
+  } else {
+    floatBtn.classList.remove("edge-hidden");
+    isEdgeHidden = false;
+    edgeSide = null;
+  }
+}
+
+function slideOut() {
+  if (!floatBtn || !isEdgeHidden) return;
+  const rect = floatBtn.getBoundingClientRect();
+  const btnW = rect.width;
+
+  if (edgeSide === "left") {
+    floatBtn.style.left = "0px";
+  } else if (edgeSide === "right") {
+    floatBtn.style.left = `${window.innerWidth - btnW}px`;
+  }
+  floatBtn.classList.remove("edge-hidden");
+}
+
+function slideBack() {
+  if (!floatBtn || !isEdgeHidden) return;
+  const btnW = floatBtn.getBoundingClientRect().width;
+
+  if (edgeSide === "left") {
+    floatBtn.style.left = `${-btnW / 2}px`;
+  } else if (edgeSide === "right") {
+    floatBtn.style.left = `${window.innerWidth - btnW / 2}px`;
+  }
+  floatBtn.classList.add("edge-hidden");
 }
 
 function handleMouseEnter() {
   if (isDragging) return;
+  if (isEdgeHidden) {
+    slideOut();
+  }
   hoverTimeout = setTimeout(() => showSettings(), 300);
 }
 
@@ -208,6 +289,9 @@ function handleMouseLeave() {
   setTimeout(() => {
     if (!settingsPanel?.matches(":hover") && !floatBtn?.matches(":hover")) {
       hideSettings();
+      if (isEdgeHidden) {
+        slideBack();
+      }
     }
   }, 200);
 }
@@ -222,8 +306,9 @@ export function createFloatingButton(
 
   floatBtn = document.createElement("div");
   floatBtn.className = "imm-float-btn";
-  floatBtn.textContent = "译";
+  floatBtn.innerHTML = TRANSLATE_SVG;
   floatBtn.title = "点击翻译 | 悬停设置";
+  floatBtn.style.opacity = String(currentOpacity);
 
   floatBtn.addEventListener("mousedown", handleMouseDown);
   floatBtn.addEventListener("mouseenter", handleMouseEnter);
