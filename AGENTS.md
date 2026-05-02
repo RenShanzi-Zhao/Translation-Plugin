@@ -64,8 +64,11 @@ API key is baked into the build via `import.meta.env`. For production, switch to
 
 ## Critical Implementation Notes
 
-- **Floating button** replaces popup. Click → translate. Hover 300ms → settings panel. Drag → move freely. Settings stored in `localStorage`.
+- **Floating button** replaces popup. Click → translate. Hover → show gear icon, click gear → settings panel. Drag → move freely, near-edge auto semi-hide (70% off-screen). Settings stored in `localStorage`.
 - **Keyboard shortcut** configurable via settings panel, default `Ctrl+Shift+A`. Also registered in manifest `commands`.
+- Position uses `document.documentElement.clientWidth` (not `window.innerWidth`) to avoid scrollbar offset issues.
+- Slide animation uses JS `requestAnimationFrame` with easeOut (not CSS transition on `left`) to prevent hover race conditions during semi-hide slide-out.
+- `isDragging` flag is reset to `false` in `handleMouseUp` after drag ends.
 - Content Script identifies main content area via semantic selectors (`article`, `main`, `[role="main"]`, etc.) then falls back to heuristic scoring.
 - Translatable nodes: `p`, `li`, `blockquote`, `h1-h6`. Skip `code`, `pre`, `nav`, `footer`, `aside`, and nodes with nav/sidebar/footer/menu class names.
 - Paragraph filter: min 15 chars, visible, not high link density, not in excluded regions.
