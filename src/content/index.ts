@@ -1,10 +1,10 @@
-import { onMessage } from "../shared/messaging";
 import { findMainContentContainer } from "./selectors";
 import { extractTranslatableNodes, buildTranslateItems } from "./extract";
-import { injectTranslations, removeAllTranslations, hasExistingTranslations, markBatchFailed } from "./inject";
+import { injectTranslations, removeAllTranslations, markBatchFailed } from "./inject";
 import { sendToBackground } from "../shared/messaging";
 import { MAX_BATCH_ITEMS, MAX_BATCH_CHARS, MAX_CONCURRENT_BATCHES, TRANSLATED_ATTR } from "../shared/constants";
-import type { PopupMessage, TranslateItem, TranslationResult } from "../shared/types";
+import { createFloatingButton, setFloatingButtonTranslating, setupKeyboardShortcut, updateProgress, markProgressDone } from "./floating";
+import type { TranslateItem, TranslationResult } from "../shared/types";
 
 let isTranslating = false;
 
@@ -92,21 +92,11 @@ async function startTranslation(targetLang: string) {
 
   const container = findMainContentContainer();
   if (!container) {
-    chrome.runtime.sendMessage({
-      type: "TRANSLATE_STATUS",
-      status: "error",
-      message: "未检测到可翻译正文",
-    });
     return;
   }
 
   const nodes = extractTranslatableNodes(container);
   if (nodes.length === 0) {
-    chrome.runtime.sendMessage({
-      type: "TRANSLATE_STATUS",
-      status: "error",
-      message: "未找到可翻译段落",
-    });
     return;
   }
 
@@ -117,60 +107,34 @@ async function startTranslation(targetLang: string) {
 
   const sourceLang = "auto";
 
-  chrome.runtime.sendMessage({
-    type: "TRANSLATE_STATUS",
-    status: "translating",
-    total: batches.length,
-    done: 0,
-  });
+  setFloatingButtonTranslating(true);
+  updateProgress(0, batches.length);
 
   try {
     await translateAllBatches(batches, nodeMap, sourceLang, targetLang, (done, total) => {
-      chrome.runtime.sendMessage({
-        type: "TRANSLATE_STATUS",
-        status: "translating",
-        total,
-        done,
-      });
+      updateProgress(done, total);
     });
 
-    chrome.runtime.sendMessage({
-      type: "TRANSLATE_STATUS",
-      status: "done",
-    });
+    markProgressDone();
   } catch {
-    chrome.runtime.sendMessage({
-      type: "TRANSLATE_STATUS",
-      status: "error",
-      message: "翻译过程中发生错误",
-    });
   } finally {
     isTranslating = false;
+    setFloatingButtonTranslating(false);
   }
 
   setupSPAMonitoring(targetLang);
 }
 
-onMessage(async (message: PopupMessage) => {
-  if (message.type === "START_TRANSLATE") {
-    if (hasExistingTranslations()) {
-      chrome.runtime.sendMessage({
-        type: "TRANSLATE_STATUS",
-        status: "done",
-        message: "页面已有译文，跳过已翻译段落",
-      });
-    }
-    await startTranslation(message.targetLang);
-  }
+function handleTranslate(targetLang: string) {
+  startTranslation(targetLang);
+}
 
-  if (message.type === "REMOVE_TRANSLATION") {
-    removeAllTranslations();
-    chrome.runtime.sendMessage({
-      type: "TRANSLATE_STATUS",
-      status: "removed",
-    });
-  }
-});
+function handleRemove() {
+  removeAllTranslations();
+}
+
+createFloatingButton(handleTranslate, handleRemove);
+setupKeyboardShortcut(handleTranslate);
 
 let observer: IntersectionObserver | null = null;
 let pendingNodes: HTMLElement[] = [];
