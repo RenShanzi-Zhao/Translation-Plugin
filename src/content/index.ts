@@ -147,6 +147,8 @@ async function startTranslation(targetLang: string) {
   } finally {
     isTranslating = false;
   }
+
+  setupSPAMonitoring(targetLang);
 }
 
 onMessage(async (message: PopupMessage) => {
@@ -244,4 +246,40 @@ async function processLazyBatch(targetLang: string) {
       processLazyBatch(targetLang);
     }
   }
+}
+
+let spaObserver: MutationObserver | null = null;
+let currentTargetLang = "zh-CN";
+
+function setupSPAMonitoring(targetLang: string) {
+  currentTargetLang = targetLang;
+
+  if (spaObserver) spaObserver.disconnect();
+
+  spaObserver = new MutationObserver((mutations) => {
+    let hasNewContent = false;
+
+    for (const mutation of mutations) {
+      for (const node of Array.from(mutation.addedNodes)) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as Element;
+          if (
+            el.tagName.toLowerCase() === "p" ||
+            el.querySelector("p, li, blockquote, h1, h2, h3, h4, h5, h6")
+          ) {
+            hasNewContent = true;
+            break;
+          }
+        }
+      }
+      if (hasNewContent) break;
+    }
+
+    if (hasNewContent && !isTranslating) {
+      setTimeout(() => setupLazyTranslation(currentTargetLang), 500);
+    }
+  });
+
+  const container = findMainContentContainer() || document.body;
+  spaObserver.observe(container, { childList: true, subtree: true });
 }
