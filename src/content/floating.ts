@@ -143,7 +143,7 @@ function slideOut() {
   const btnW = 48;
   const current = parseFloat(floatBtn.style.left) || -btnW * 0.7;
   const target = hideSide === "right" ? getViewportW() - btnW - 6 : 6;
-  animateLeft(current, target, 250);
+  animateLeft(current, target, 250, () => { updateGearPosition(); });
   floatBtn.style.right = "auto";
   floatBtn.style.opacity = "1";
 }
@@ -172,7 +172,6 @@ function positionGear() {
 }
 
 function showGear() {
-  if (isAnimating) return;
   createSettingsGear();
   positionGear();
   settingsGear?.classList.add("visible");
@@ -416,6 +415,10 @@ function handleMouseEnter() {
     slideOut();
   }
   showGear();
+}
+
+function updateGearPosition() {
+  positionGear();
 }
 
 function handleMouseLeave() {
