@@ -119,6 +119,8 @@ function semiHide() {
 
 function slideOut() {
   if (!floatBtn) return;
+  // Disable transition for left so it snaps instantly (prevents hover race condition)
+  floatBtn.style.transition = `left 0s, opacity 0.3s ease, box-shadow 0.2s`;
   const btnW = 48;
   if (hideSide === "right") {
     floatBtn.style.left = `${getViewportW() - btnW - 6}px`;
@@ -127,6 +129,9 @@ function slideOut() {
   }
   floatBtn.style.right = "auto";
   floatBtn.style.opacity = "1";
+  // Force reflow then restore transition for smooth slide-back
+  void floatBtn.offsetWidth;
+  floatBtn.style.transition = "";
 }
 
 // ─── Settings gear icon ───
