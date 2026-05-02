@@ -14,6 +14,7 @@ let btnStartX = 0;
 let btnStartY = 0;
 let hasMoved = false;
 let isSemiHidden = true;
+let hideSide: "left" | "right" = "right";
 
 let currentTargetLang = "zh-CN";
 let currentShortcut = "Ctrl+Shift+A";
@@ -103,7 +104,11 @@ export function markProgressDone() {
 function semiHide() {
   if (!floatBtn || !isSemiHidden) return;
   const btnW = 48;
-  floatBtn.style.left = `${window.innerWidth - btnW * 0.3}px`;
+  if (hideSide === "right") {
+    floatBtn.style.left = `${window.innerWidth - btnW * 0.3}px`;
+  } else {
+    floatBtn.style.left = `${-btnW * 0.7}px`;
+  }
   floatBtn.style.right = "auto";
   floatBtn.style.opacity = String(currentOpacity);
 }
@@ -111,7 +116,11 @@ function semiHide() {
 function slideOut() {
   if (!floatBtn) return;
   const btnW = 48;
-  floatBtn.style.left = `${window.innerWidth - btnW - 6}px`;
+  if (hideSide === "right") {
+    floatBtn.style.left = `${window.innerWidth - btnW - 6}px`;
+  } else {
+    floatBtn.style.left = "6px";
+  }
   floatBtn.style.right = "auto";
   floatBtn.style.opacity = "1";
 }
@@ -277,8 +286,8 @@ function showSettings() {
   if (left + panelWidth > window.innerWidth - 10) left = window.innerWidth - panelWidth - 10;
 
   let top = rect.bottom + 40;
-  if (top + 280 > window.innerHeight) {
-    top = rect.top - 290;
+  if (top + 240 > window.innerHeight) {
+    top = rect.top - 250;
   }
   if (top < 10) top = 10;
 
@@ -352,9 +361,14 @@ function handleMouseUp() {
     // Click — translate
     if (onTranslateCallback) onTranslateCallback(currentTargetLang);
   } else {
-    // After drag — check if near right edge to re-enable semi-hide
+    // After drag — check if near either edge to re-enable semi-hide
     const rect = floatBtn!.getBoundingClientRect();
-    if (rect.right > window.innerWidth - 20) {
+    if (rect.left < 20) {
+      hideSide = "left";
+      isSemiHidden = true;
+      semiHide();
+    } else if (rect.right > window.innerWidth - 20) {
+      hideSide = "right";
       isSemiHidden = true;
       semiHide();
     } else {
@@ -372,7 +386,6 @@ function handleMouseEnter() {
 }
 
 function handleMouseLeave() {
-  // Delay to allow moving to gear or settings panel
   setTimeout(() => {
     const overBtn = floatBtn?.matches(":hover") ?? false;
     const overGear = settingsGear?.matches(":hover") ?? false;
@@ -385,7 +398,7 @@ function handleMouseLeave() {
         semiHide();
       }
     }
-  }, 200);
+  }, 100);
 }
 
 function handleGearMouseLeave() {
@@ -401,7 +414,7 @@ function handleGearMouseLeave() {
         semiHide();
       }
     }
-  }, 200);
+  }, 100);
 }
 
 // ─── Public API ───
