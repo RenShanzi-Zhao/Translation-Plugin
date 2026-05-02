@@ -17,6 +17,23 @@ export default defineConfig(({ mode }) => {
     };
   }
 
+  if (mode === "options") {
+    return {
+      base: "./",
+      root: resolve(__dirname, "src/options"),
+      build: {
+        outDir: resolve(__dirname, "dist/options"),
+        rollupOptions: {
+          input: resolve(__dirname, "src/options/index.html"),
+        },
+        emptyOutDir: true,
+        sourcemap: false,
+        minify: true,
+      },
+      define: { "process.env": {} },
+    };
+  }
+
   // content (default mode)
   return {
     build: {

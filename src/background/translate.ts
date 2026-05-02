@@ -1,51 +1,122 @@
-import type { TranslateItem, TranslationResult, TranslateError } from "../shared/types";
+import type {
+  TranslateItem,
+  TranslationResult,
+  TranslateError,
+  TestConnectionPayload,
+} from "../shared/types";
 import { REQUEST_TIMEOUT_MS, MAX_RETRIES } from "../shared/constants";
+import { getRuntimeConfig, type RuntimeConfig } from "../shared/config";
 
-interface EnvConfig {
-  apiBaseUrl: string;
-  apiKey: string;
-  model: string;
-}
-
-function getConfig(): EnvConfig {
+function getEnvFallbackConfig() {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const apiKey = import.meta.env.VITE_API_KEY;
   const model = import.meta.env.VITE_MODEL;
-
-  if (!apiBaseUrl || !apiKey) {
-    throw new Error("Missing VITE_API_BASE_URL or VITE_API_KEY in environment");
-  }
-
   return { apiBaseUrl, apiKey, model: model || "gpt-4o-mini" };
 }
 
-function buildPrompt(items: TranslateItem[], sourceLang: string, targetLang: string): string {
-  const numbered = items.map((item, i) => `${i + 1}. ${item.text}`).join("\n");
-  return `Translate the following paragraphs from ${sourceLang} to ${targetLang}.
-Output ONLY the translations, one per line, numbered to match the input.
-Do not add explanations, notes, or extra formatting.
+function stripCodeFences(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith("```")) {
+    return trimmed;
+  }
 
-${numbered}`;
+  return trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
 }
 
-function parseResponse(raw: string, itemCount: number): string[] {
-  const lines = raw.trim().split("\n");
-  const results: string[] = [];
+export function buildPrompt(items: TranslateItem[], sourceLang: string, targetLang: string): string {
+  const serializedItems = JSON.stringify(items, null, 2);
 
-  for (const line of lines) {
-    const match = line.match(/^\d+\.\s*(.*)/);
-    if (match) {
-      results.push(match[1].trim());
-    } else if (line.trim()) {
-      results.push(line.trim());
+  return [
+    `Translate the following paragraphs from ${sourceLang} to ${targetLang}.`,
+    "Preserve each input id exactly.",
+    'Output ONLY valid JSON with the shape {"translations":[{"id":"...","translatedText":"..."}]}.',
+    "Do not add explanations, markdown, or extra keys.",
+    "",
+    serializedItems,
+  ].join("\n");
+}
+
+export function parseStructuredTranslations(raw: string, itemIds: string[]): TranslationResult[] {
+  const normalized = JSON.parse(stripCodeFences(raw)) as {
+    translations?: Array<{ id?: unknown; translatedText?: unknown }>;
+  };
+
+  const translations = new Map<string, string>();
+  for (const entry of normalized.translations ?? []) {
+    if (typeof entry?.id !== "string") {
+      continue;
     }
+
+    translations.set(
+      entry.id,
+      typeof entry.translatedText === "string" ? entry.translatedText.trim() : ""
+    );
   }
 
-  while (results.length < itemCount) {
-    results.push("");
+  return itemIds.map((id) => ({
+    id,
+    translatedText: translations.get(id) ?? "",
+  }));
+}
+
+async function callChatCompletions(
+  config: RuntimeConfig,
+  body: Record<string, unknown>,
+  controller: AbortController
+) {
+  return fetch(`${config.apiBaseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${config.apiKey}`,
+    },
+    body: JSON.stringify(body),
+    signal: controller.signal,
+  });
+}
+
+export async function testConnection(configInput: TestConnectionPayload): Promise<void> {
+  const config: RuntimeConfig = {
+    apiBaseUrl: configInput.apiBaseUrl.trim(),
+    apiKey: configInput.apiKey.trim(),
+    model: configInput.model.trim() || "gpt-4o-mini",
+  };
+
+  if (!config.apiBaseUrl || !config.apiKey) {
+    throw new Error("API Base URL and API Key are required.");
   }
 
-  return results.slice(0, itemCount);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await callChatCompletions(
+      config,
+      {
+        model: config.model,
+        messages: [
+          { role: "system", content: "Reply with OK only." },
+          { role: "user", content: "Connection test" },
+        ],
+        max_tokens: 5,
+        temperature: 0,
+      },
+      controller
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API returned ${response.status}: ${errorText}`);
+    }
+  } catch (err: any) {
+    if (err?.name === "AbortError" || err?.code === "ABORT_ERR") {
+      throw new Error("Connection test timed out");
+    }
+
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function translateBatch(
@@ -53,34 +124,32 @@ export async function translateBatch(
   sourceLang: string,
   targetLang: string
 ): Promise<TranslationResult[]> {
-  const config = getConfig();
+  const config = await getRuntimeConfig(getEnvFallbackConfig());
   const prompt = buildPrompt(items, sourceLang, targetLang);
 
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-      const response = await fetch(`${config.apiBaseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${config.apiKey}`,
-        },
-        body: JSON.stringify({
+    try {
+      const response = await callChatCompletions(
+        config,
+        {
           model: config.model,
           messages: [
-            { role: "system", content: "You are a professional translator. Output only translations, no explanations." },
+            {
+              role: "system",
+              content:
+                "You are a professional translator. Return only the requested JSON payload.",
+            },
             { role: "user", content: prompt },
           ],
           temperature: 0.3,
-        }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeout);
+        },
+        controller
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -99,24 +168,21 @@ export async function translateBatch(
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || "";
-      const translatedTexts = parseResponse(content, items.length);
-
-      return items.map((item, i) => ({
-        id: item.id,
-        translatedText: translatedTexts[i],
-      }));
+      return parseStructuredTranslations(content, items.map((item) => item.id));
     } catch (err: any) {
-      if (err.code === "ABORT_ERR") {
+      if (err?.name === "AbortError" || err?.code === "ABORT_ERR") {
         lastError = new Error("Request timeout");
         if (attempt < MAX_RETRIES) continue;
         throw { code: "TRANSLATE_TIMEOUT", message: "Request timed out after retries" } as TranslateError;
       }
 
-      if (err.code && err.message) throw err;
+      if (err?.code && err?.message) throw err;
 
       lastError = err;
       if (attempt < MAX_RETRIES) continue;
       throw { code: "INTERNAL_ERROR", message: err.message } as TranslateError;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

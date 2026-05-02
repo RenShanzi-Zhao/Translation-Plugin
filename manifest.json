@@ -2,8 +2,9 @@
   "manifest_version": 3,
   "name": "Immersive Translator",
   "version": "0.2.0",
-  "description": "沉浸式双语翻译扩展",
+  "description": "Immersive bilingual translation extension for Edge.",
   "permissions": ["storage", "activeTab", "scripting"],
+  "options_page": "options/index.html",
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",
@@ -16,7 +17,7 @@
       "suggested_key": {
         "default": "Ctrl+Shift+A"
       },
-      "description": "翻译当前页面"
+      "description": "Translate current page"
     }
   },
   "background": {

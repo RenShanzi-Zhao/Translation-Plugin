@@ -23,14 +23,33 @@ export type TranslateError = {
   message: string;
 };
 
+export type RuntimeErrorResponse = {
+  error: {
+    code?: string;
+    message: string;
+  };
+};
+
 export type PopupMessage =
   | { type: "START_TRANSLATE"; targetLang: string }
   | { type: "REMOVE_TRANSLATION" };
 
+export type TestConnectionPayload = {
+  apiBaseUrl: string;
+  apiKey: string;
+  model: string;
+};
+
 export type ContentToBgMessage =
   | { type: "TRANSLATE_BATCH"; items: TranslateItem[]; sourceLang: string; targetLang: string }
+  | { type: "TEST_CONNECTION"; config: TestConnectionPayload }
   | { type: "PING" };
 
 export type BgToContentMessage =
   | { type: "TRANSLATE_RESULT"; translations: TranslationResult[] }
-  | { type: "TRANSLATE_ERROR"; error: TranslateError };
+  | { type: "TRANSLATE_ERROR"; error: TranslateError }
+  | { type: "TEST_CONNECTION_RESULT"; ok: boolean; message: string };
+
+export type PingResponse = { type: "PONG" };
+
+export type BgResponse = BgToContentMessage | PingResponse | RuntimeErrorResponse;
