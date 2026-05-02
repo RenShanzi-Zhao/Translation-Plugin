@@ -14,7 +14,8 @@ let btnStartX = 0;
 let btnStartY = 0;
 let hasMoved = false;
 let isSemiHidden = true;
-let hideSide: "left" | "right" = "right";
+let hideSide: "left" | "right" = "left";
+let isAnimating = false;
 
 let currentTargetLang = "zh-CN";
 let currentShortcut = "Ctrl+Shift+A";
@@ -103,35 +104,48 @@ function getViewportW(): number {
   return document.documentElement.clientWidth;
 }
 
+function animateLeft(from: number, to: number, duration: number, onDone?: () => void) {
+  if (!floatBtn) return;
+  const startTime = performance.now();
+
+  function frame(time: number) {
+    if (!floatBtn) return;
+    const elapsed = time - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    floatBtn.style.left = `${from + (to - from) * eased}px`;
+
+    if (progress < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      floatBtn.style.left = `${to}px`;
+      onDone?.();
+    }
+  }
+
+  isAnimating = true;
+  requestAnimationFrame(frame);
+}
+
 // ─── Semi-hide behavior ───
 
 function semiHide() {
   if (!floatBtn || !isSemiHidden) return;
   const btnW = 48;
-  if (hideSide === "right") {
-    floatBtn.style.left = `${getViewportW() - btnW * 0.3}px`;
-  } else {
-    floatBtn.style.left = `${-btnW * 0.7}px`;
-  }
-  floatBtn.style.right = "auto";
+  const current = parseFloat(floatBtn.style.left) || 6;
+  const target = hideSide === "right" ? getViewportW() - btnW * 0.3 : -btnW * 0.7;
+  animateLeft(current, target, 250, () => { isAnimating = false; });
   floatBtn.style.opacity = String(currentOpacity);
 }
 
 function slideOut() {
   if (!floatBtn) return;
-  // Disable transition for left so it snaps instantly (prevents hover race condition)
-  floatBtn.style.transition = `left 0s, opacity 0.3s ease, box-shadow 0.2s`;
   const btnW = 48;
-  if (hideSide === "right") {
-    floatBtn.style.left = `${getViewportW() - btnW - 6}px`;
-  } else {
-    floatBtn.style.left = "6px";
-  }
+  const current = parseFloat(floatBtn.style.left) || -btnW * 0.7;
+  const target = hideSide === "right" ? getViewportW() - btnW - 6 : 6;
+  animateLeft(current, target, 250);
   floatBtn.style.right = "auto";
   floatBtn.style.opacity = "1";
-  // Force reflow then restore transition for smooth slide-back
-  void floatBtn.offsetWidth;
-  floatBtn.style.transition = "";
 }
 
 // ─── Settings gear icon ───
@@ -158,6 +172,7 @@ function positionGear() {
 }
 
 function showGear() {
+  if (isAnimating) return;
   createSettingsGear();
   positionGear();
   settingsGear?.classList.add("visible");
@@ -405,6 +420,7 @@ function handleMouseEnter() {
 
 function handleMouseLeave() {
   setTimeout(() => {
+    if (isAnimating) return;
     const overBtn = floatBtn?.matches(":hover") ?? false;
     const overGear = settingsGear?.matches(":hover") ?? false;
     const overPanel = settingsPanel?.matches(":hover") ?? false;
@@ -421,6 +437,7 @@ function handleMouseLeave() {
 
 function handleGearMouseLeave() {
   setTimeout(() => {
+    if (isAnimating) return;
     const overBtn = floatBtn?.matches(":hover") ?? false;
     const overGear = settingsGear?.matches(":hover") ?? false;
     const overPanel = settingsPanel?.matches(":hover") ?? false;
