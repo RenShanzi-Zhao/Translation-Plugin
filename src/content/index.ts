@@ -1,249 +1,97 @@
 import { findMainContentContainer } from "./selectors";
 import { extractTranslatableNodes, buildTranslateItems } from "./extract";
-import { injectTranslations, removeAllTranslations, markBatchFailed } from "./inject";
-import { sendToBackground } from "../shared/messaging";
-import { MAX_BATCH_ITEMS, MAX_BATCH_CHARS, MAX_CONCURRENT_BATCHES, TRANSLATED_ATTR } from "../shared/constants";
-import { createFloatingButton, setFloatingButtonTranslating, setupKeyboardShortcut, updateProgress, markProgressDone } from "./floating";
-import type { TranslateItem, TranslationResult } from "../shared/types";
+import { injectTranslations, markBatchFailed, removeAllTranslations } from "./inject";
+import {
+  createFloatingButton,
+  setFloatingButtonTranslating,
+  setupKeyboardShortcut,
+  updateProgress,
+  markProgressDone,
+} from "./floating";
+import { translateOneBatch, translateBatches } from "./orchestrator";
+import { createLazyTranslationController } from "./lazyTranslation";
+import { createSPAMonitoring } from "./spaMonitoring";
 
 let isTranslating = false;
+let currentTargetLang = "zh-CN";
+let currentNodeMap = new Map<string, HTMLElement>();
 
-function splitIntoBatches(items: TranslateItem[]): TranslateItem[][] {
-  const batches: TranslateItem[][] = [];
-  let currentBatch: TranslateItem[] = [];
-  let currentChars = 0;
-
-  for (const item of items) {
-    if (
-      currentBatch.length >= MAX_BATCH_ITEMS ||
-      (currentBatch.length > 0 && currentChars + item.text.length > MAX_BATCH_CHARS)
-    ) {
-      batches.push(currentBatch);
-      currentBatch = [];
-      currentChars = 0;
+const lazyTranslation = createLazyTranslationController(
+  async (batch, targetLang) => {
+    isTranslating = true;
+    try {
+      const results = await translateOneBatch(batch, "auto", targetLang);
+      injectTranslations(results, currentNodeMap);
+    } catch {
+      markBatchFailed(batch, currentNodeMap);
+    } finally {
+      isTranslating = false;
     }
-    currentBatch.push(item);
-    currentChars += item.text.length;
-  }
+  },
+  () => isTranslating
+);
 
-  if (currentBatch.length > 0) {
-    batches.push(currentBatch);
-  }
-
-  return batches;
-}
-
-async function translateOneBatch(
-  batch: TranslateItem[],
-  sourceLang: string,
-  targetLang: string
-): Promise<TranslationResult[]> {
-  const response = await sendToBackground({
-    type: "TRANSLATE_BATCH",
-    items: batch,
-    sourceLang,
-    targetLang,
-  });
-
-  if (response?.error) {
-    throw new Error(response.error.message || "Translation failed");
-  }
-
-  return response.translations;
-}
-
-async function translateAllBatches(
-  batches: TranslateItem[][],
-  nodeMap: Map<string, HTMLElement>,
-  sourceLang: string,
-  targetLang: string,
-  onProgress: (done: number, total: number) => void
-) {
-  let index = 0;
-  let completed = 0;
-
-  async function runNext() {
-    while (index < batches.length) {
-      const batchIndex = index++;
-      const batch = batches[batchIndex];
-
-      try {
-        const results = await translateOneBatch(batch, sourceLang, targetLang);
-        injectTranslations(results, nodeMap);
-      } catch {
-        markBatchFailed(batch, nodeMap);
-      }
-
-      completed++;
-      onProgress(completed, batches.length);
-    }
-  }
-
-  const workers: Promise<void>[] = [];
-  for (let i = 0; i < MAX_CONCURRENT_BATCHES; i++) {
-    workers.push(runNext());
-  }
-
-  await Promise.all(workers);
-}
+const spaMonitoring = createSPAMonitoring(() => {
+  const container = findMainContentContainer();
+  if (!container) return;
+  const nodes = extractTranslatableNodes(container);
+  if (nodes.length === 0) return;
+  const { items, nodeMap } = buildTranslateItems(nodes);
+  currentNodeMap = nodeMap;
+  lazyTranslation.setup(currentTargetLang, nodes, items, nodeMap);
+}, () => isTranslating);
 
 async function startTranslation(targetLang: string) {
   if (isTranslating) return;
 
-  const container = findMainContentContainer();
-  if (!container) {
-    return;
-  }
-
-  const nodes = extractTranslatableNodes(container);
-  if (nodes.length === 0) {
-    return;
-  }
-
-  isTranslating = true;
-
-  const { items, nodeMap } = buildTranslateItems(nodes);
-  const batches = splitIntoBatches(items);
-
-  const sourceLang = "auto";
-
-  setFloatingButtonTranslating(true);
-  updateProgress(0, batches.length);
-
-  try {
-    await translateAllBatches(batches, nodeMap, sourceLang, targetLang, (done, total) => {
-      updateProgress(done, total);
-    });
-
-    markProgressDone();
-  } catch {
-  } finally {
-    isTranslating = false;
-    setFloatingButtonTranslating(false);
-  }
-
-  setupSPAMonitoring(targetLang);
-}
-
-function handleTranslate(targetLang: string) {
-  startTranslation(targetLang);
-}
-
-function handleRemove() {
-  removeAllTranslations();
-}
-
-createFloatingButton(handleTranslate, handleRemove);
-setupKeyboardShortcut(handleTranslate);
-
-let observer: IntersectionObserver | null = null;
-let pendingNodes: HTMLElement[] = [];
-let nodeMapRef: Map<string, HTMLElement> = new Map();
-
-function setupLazyTranslation(targetLang: string) {
   const container = findMainContentContainer();
   if (!container) return;
 
   const nodes = extractTranslatableNodes(container);
   if (nodes.length === 0) return;
 
-  const { items, nodeMap } = buildTranslateItems(nodes);
-  nodeMapRef = nodeMap;
-
-  const itemMap = new Map<string, TranslateItem>();
-  for (const item of items) {
-    itemMap.set(item.id, item);
-  }
-
-  observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          const node = entry.target as HTMLElement;
-          const id = Array.from(nodeMap.entries()).find(([_, n]) => n === node)?.[0];
-          if (id) {
-            const item = itemMap.get(id);
-            if (item) pendingNodes.push(node);
-          }
-          observer?.unobserve(node);
-        }
-      }
-
-      processLazyBatch(targetLang);
-    },
-    { rootMargin: "200px" }
-  );
-
-  for (const node of nodes) {
-    if (!node.hasAttribute(TRANSLATED_ATTR)) {
-      observer.observe(node);
-    }
-  }
-}
-
-async function processLazyBatch(targetLang: string) {
-  if (isTranslating || pendingNodes.length === 0) return;
-
-  const batch: TranslateItem[] = [];
-  const batchNodes: HTMLElement[] = [];
-
-  while (pendingNodes.length > 0 && batch.length < MAX_BATCH_ITEMS) {
-    const node = pendingNodes.shift()!;
-    const id = Array.from(nodeMapRef.entries()).find(([_, n]) => n === node)?.[0];
-    if (id && !node.hasAttribute(TRANSLATED_ATTR)) {
-      batch.push({ id, text: node.textContent?.trim() || "" });
-      batchNodes.push(node);
-    }
-  }
-
-  if (batch.length === 0) return;
-
   isTranslating = true;
-  try {
-    const results = await translateOneBatch(batch, "auto", targetLang);
-    injectTranslations(results, nodeMapRef);
-  } catch {
-    markBatchFailed(batch, nodeMapRef);
-  } finally {
-    isTranslating = false;
-    if (pendingNodes.length > 0) {
-      processLazyBatch(targetLang);
-    }
-  }
-}
-
-let spaObserver: MutationObserver | null = null;
-let currentTargetLang = "zh-CN";
-
-function setupSPAMonitoring(targetLang: string) {
   currentTargetLang = targetLang;
 
-  if (spaObserver) spaObserver.disconnect();
+  const { items, nodeMap } = buildTranslateItems(nodes);
+  currentNodeMap = nodeMap;
 
-  spaObserver = new MutationObserver((mutations) => {
-    let hasNewContent = false;
+  setFloatingButtonTranslating(true);
+  updateProgress(0, 1);
 
-    for (const mutation of mutations) {
-      for (const node of Array.from(mutation.addedNodes)) {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          const el = node as Element;
-          if (
-            el.tagName.toLowerCase() === "p" ||
-            el.querySelector("p, li, blockquote, h1, h2, h3, h4, h5, h6")
-          ) {
-            hasNewContent = true;
-            break;
-          }
-        }
-      }
-      if (hasNewContent) break;
+  try {
+    const { totalBatches } = await translateBatches(
+      items,
+      nodeMap,
+      "auto",
+      targetLang,
+      (done, total) => updateProgress(done, total)
+    );
+
+    if (totalBatches === 0) {
+      updateProgress(1, 1);
     }
+    markProgressDone();
+  } finally {
+    isTranslating = false;
+    setFloatingButtonTranslating(false);
+  }
 
-    if (hasNewContent && !isTranslating) {
-      setTimeout(() => setupLazyTranslation(currentTargetLang), 500);
-    }
-  });
-
-  const container = findMainContentContainer() || document.body;
-  spaObserver.observe(container, { childList: true, subtree: true });
+  lazyTranslation.setup(targetLang, nodes, items, nodeMap);
+  spaMonitoring.start(container);
 }
+
+function handleTranslate(targetLang: string) {
+  void startTranslation(targetLang);
+}
+
+function handleRemove() {
+  lazyTranslation.reset();
+  spaMonitoring.stop();
+  removeAllTranslations();
+}
+
+export { updateProgress, markProgressDone };
+
+createFloatingButton(handleTranslate, handleRemove).catch(console.error);
+setupKeyboardShortcut(handleTranslate);
