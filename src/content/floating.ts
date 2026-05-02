@@ -393,6 +393,7 @@ function handleMouseMove(e: MouseEvent) {
 function handleMouseUp() {
   document.removeEventListener("mousemove", handleMouseMove);
   document.removeEventListener("mouseup", handleMouseUp);
+  isDragging = false;
 
   if (!hasMoved) {
     // Click — translate
