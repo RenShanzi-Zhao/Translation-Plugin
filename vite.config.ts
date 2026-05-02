@@ -23,6 +23,8 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    root: resolve(__dirname, "src/popup"),
+    base: "./",
     build: {
       rollupOptions: {
         input: resolve(__dirname, "src/popup/index.html"),
