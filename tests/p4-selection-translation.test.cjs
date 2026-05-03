@@ -14,4 +14,8 @@ assert.match(technicalSpec, /划词翻译/);
 assert.ok(existsSync(resolve(process.cwd(), "src/content/selectionPopup.ts")));
 assert.ok(existsSync(resolve(process.cwd(), "src/content/selectionPopup.css")));
 
+const indexSource = readFileSync(resolve(process.cwd(), "src/content/index.ts"), "utf8");
+assert.match(indexSource, /selectionTranslation/);
+assert.match(indexSource, /Ctrl/);
+
 console.log("selection translation contract test passed");

@@ -11,6 +11,7 @@ import {
 import { translateOneBatch, translateBatches } from "./orchestrator";
 import { createLazyTranslationController } from "./lazyTranslation";
 import { createSPAMonitoring } from "./spaMonitoring";
+import { setupSelectionTranslation } from "./selectionTranslation";
 
 let isTranslating = false;
 let currentTargetLang = "zh-CN";
@@ -95,3 +96,5 @@ export { updateProgress, markProgressDone };
 
 createFloatingButton(handleTranslate, handleRemove).catch(console.error);
 setupKeyboardShortcut(handleTranslate);
+// Ctrl+click to translate selected text
+setupSelectionTranslation(() => currentTargetLang);
