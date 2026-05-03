@@ -25,4 +25,12 @@ assert.match(backgroundIndex, /SELECTION_TRANSLATE/);
 assert.match(backgroundIndex, /SELECTION_TRANSLATE_RESULT/);
 assert.match(translateSource, /translateSelectionText/);
 
+const popupSource = readFileSync(resolve(process.cwd(), "src/content/selectionPopup.ts"), "utf8");
+assert.match(popupSource, /loading/);
+assert.match(popupSource, /error/);
+assert.match(popupSource, /success/);
+
+const selectionTranslationSource = readFileSync(resolve(process.cwd(), "src/content/selectionTranslation.ts"), "utf8");
+assert.match(selectionTranslationSource, /Escape/);
+
 console.log("selection translation contract test passed");
