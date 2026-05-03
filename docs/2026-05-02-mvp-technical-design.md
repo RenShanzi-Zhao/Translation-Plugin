@@ -112,6 +112,8 @@ src/
     floating.css
     inject.ts
     selectors.ts
+    pdfDetection.ts
+    pdfTranslation.ts
   options/
     index.html
     main.ts
@@ -359,7 +361,11 @@ content script 通过：
 - 对批次采用有限并发和最小重试
 - 继续拆分 content UI 与翻译调度逻辑
 
-### 15. 后续功能：划词翻译
+### 15. 后续功能：PDF 翻译
+
+Phase 2 预埋了 PDF 页面检测 (`pdfDetection.ts`) 和 PDF 选择翻译接口 (`pdfTranslation.ts`)。当前仅为空壳，用于确认 PDF 页面识别逻辑可用，具体 PDF 渲染与选区翻译留待后续实现。
+
+### 16. 后续功能：划词翻译
 
 - content script 监听 Selection 和 Ctrl 状态
 - selection translation 通过独立消息链路走 background
