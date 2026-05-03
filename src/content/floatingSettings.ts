@@ -72,6 +72,9 @@ export function createSettingsPanel(
       <button class="imm-action-btn imm-translate-btn" id="imm-panel-translate">翻译</button>
       <button class="imm-action-btn imm-remove-btn" id="imm-panel-remove">移除</button>
     </div>
+    <div class="imm-btn-row" style="margin-top:4px">
+      <button class="imm-action-btn imm-vocab-btn" id="imm-panel-vocab">📚 词汇库</button>
+    </div>
   `;
 
   document.documentElement.appendChild(panel);
@@ -137,6 +140,12 @@ export function createSettingsPanel(
 
   removeBtn.addEventListener("click", () => {
     callbacks.onRemove();
+  });
+
+  const vocabBtn = panel.querySelector("#imm-panel-vocab") as HTMLButtonElement;
+  vocabBtn.addEventListener("click", () => {
+    const url = chrome.runtime.getURL("options/vocabulary.html");
+    window.open(url, "_blank");
   });
 
   panel.addEventListener("mousedown", (e) => e.stopPropagation());
