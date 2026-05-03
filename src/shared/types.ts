@@ -34,16 +34,6 @@ export type PopupMessage =
   | { type: "START_TRANSLATE"; targetLang: string }
   | { type: "REMOVE_TRANSLATION" };
 
-export type SelectionTranslateRequest = {
-  text: string;
-  sourceLang: string;
-  targetLang: string;
-};
-
-export type SelectionTranslateResponse = {
-  translatedText: string;
-};
-
 export type TestConnectionPayload = {
   apiBaseUrl: string;
   apiKey: string;
