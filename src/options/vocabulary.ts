@@ -30,7 +30,7 @@ async function renderVocabulary() {
     btn.addEventListener("click", async () => {
       const index = parseInt((btn as HTMLElement).dataset.index!, 10);
       const items = await getVocabulary();
-      await removeVocabularyItem(items[index].term);
+      await removeVocabularyItem(items[index].id);
       await renderVocabulary();
     });
   });
