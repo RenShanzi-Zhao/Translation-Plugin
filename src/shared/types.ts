@@ -34,6 +34,16 @@ export type PopupMessage =
   | { type: "START_TRANSLATE"; targetLang: string }
   | { type: "REMOVE_TRANSLATION" };
 
+export type SelectionTranslateRequest = {
+  text: string;
+  sourceLang: string;
+  targetLang: string;
+};
+
+export type SelectionTranslateResponse = {
+  translatedText: string;
+};
+
 export type TestConnectionPayload = {
   apiBaseUrl: string;
   apiKey: string;
@@ -43,12 +53,14 @@ export type TestConnectionPayload = {
 export type ContentToBgMessage =
   | { type: "TRANSLATE_BATCH"; items: TranslateItem[]; sourceLang: string; targetLang: string }
   | { type: "TEST_CONNECTION"; config: TestConnectionPayload }
+  | { type: "SELECTION_TRANSLATE"; text: string; sourceLang: string; targetLang: string }
   | { type: "PING" };
 
 export type BgToContentMessage =
   | { type: "TRANSLATE_RESULT"; translations: TranslationResult[] }
   | { type: "TRANSLATE_ERROR"; error: TranslateError }
-  | { type: "TEST_CONNECTION_RESULT"; ok: boolean; message: string };
+  | { type: "TEST_CONNECTION_RESULT"; ok: boolean; message: string }
+  | { type: "SELECTION_TRANSLATE_RESULT"; translatedText: string };
 
 export type PingResponse = { type: "PONG" };
 

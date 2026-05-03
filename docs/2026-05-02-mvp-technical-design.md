@@ -358,3 +358,8 @@ content script 通过：
 - 使用结构化 JSON 输出和 `id` 回填
 - 对批次采用有限并发和最小重试
 - 继续拆分 content UI 与翻译调度逻辑
+
+### 15. 后续功能：划词翻译
+
+- content script 监听 Selection 和 Ctrl 状态
+- selection translation 通过独立消息链路走 background
