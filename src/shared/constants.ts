@@ -6,7 +6,7 @@ export const FAILED_CLASS = "imm-translation-failed";
 export const MIN_PARAGRAPH_LENGTH = 5;
 export const MAX_BATCH_ITEMS = 15;
 export const MAX_BATCH_CHARS = 2500;
-export const MAX_CONCURRENT_BATCHES = 10;
+export const MAX_CONCURRENT_BATCHES = 20;
 export const REQUEST_TIMEOUT_MS = 20_000;
 export const MAX_RETRIES = 1;
 
