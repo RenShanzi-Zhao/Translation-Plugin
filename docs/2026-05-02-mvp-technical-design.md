@@ -106,14 +106,14 @@ src/
     spaMonitoring.ts
     extract.ts
     floating.ts
+    floatingButtonController.ts
+    floatingOverlayController.ts
     floatingSettings.ts
     floatingProgress.ts
     floatingShortcut.ts
     floating.css
     inject.ts
     selectors.ts
-    pdfDetection.ts
-    pdfTranslation.ts
   options/
     index.html
     main.ts

@@ -7,7 +7,9 @@ import {
 } from "./selectionPopup";
 import type { BgResponse } from "../shared/types";
 
-function isSelectionResult(response: BgResponse): response is { type: "SELECTION_TRANSLATE_RESULT"; translatedText: string } {
+function isSelectionResult(
+  response: BgResponse
+): response is { type: "SELECTION_TRANSLATE_RESULT"; translatedText: string } {
   return "type" in response && response.type === "SELECTION_TRANSLATE_RESULT";
 }
 
@@ -34,25 +36,41 @@ export function setupSelectionTranslation(getTargetLang: () => string) {
     showSelectionPopupLoading(event.clientX, event.clientY, selection);
 
     try {
-      const response = await sendToBackground({
+      const response = (await sendToBackground({
         type: "SELECTION_TRANSLATE",
         text: selection,
         sourceLang: "auto",
         targetLang: getTargetLang(),
-      }) as BgResponse;
+      })) as BgResponse;
 
       if ("error" in response && response.error) {
-        showSelectionPopupError(event.clientX, event.clientY, response.error.message || "翻译失败");
+        showSelectionPopupError(
+          event.clientX,
+          event.clientY,
+          response.error.message || "缈昏瘧澶辫触"
+        );
         return;
       }
 
       if (isSelectionResult(response)) {
-        showSelectionPopupSuccess(event.clientX, event.clientY, response.translatedText);
+        showSelectionPopupSuccess(
+          event.clientX,
+          event.clientY,
+          response.translatedText
+        );
       } else {
-        showSelectionPopupError(event.clientX, event.clientY, "未知响应类型");
+        showSelectionPopupError(
+          event.clientX,
+          event.clientY,
+          "鏈煡鍝嶅簲绫诲瀷"
+        );
       }
     } catch (err: any) {
-      showSelectionPopupError(event.clientX, event.clientY, err.message || "翻译失败");
+      showSelectionPopupError(
+        event.clientX,
+        event.clientY,
+        err.message || "缈昏瘧澶辫触"
+      );
     }
   });
 

@@ -16,7 +16,6 @@ assert.ok(existsSync(resolve(process.cwd(), "src/content/selectionPopup.css")));
 
 const indexSource = readFileSync(resolve(process.cwd(), "src/content/index.ts"), "utf8");
 assert.match(indexSource, /selectionTranslation/);
-assert.match(indexSource, /Ctrl/);
 
 const backgroundIndex = readFileSync(resolve(process.cwd(), "src/background/index.ts"), "utf8");
 const translateSource = readFileSync(resolve(process.cwd(), "src/background/translate.ts"), "utf8");
@@ -31,6 +30,7 @@ assert.match(popupSource, /error/);
 assert.match(popupSource, /success/);
 
 const selectionTranslationSource = readFileSync(resolve(process.cwd(), "src/content/selectionTranslation.ts"), "utf8");
+assert.match(selectionTranslationSource, /Control/);
 assert.match(selectionTranslationSource, /Escape/);
 
 console.log("selection translation contract test passed");
