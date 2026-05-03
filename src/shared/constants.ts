@@ -3,7 +3,7 @@ export const TRANSLATION_FOR_ATTR = "data-imm-translation-for";
 export const TRANSLATION_BLOCK_CLASS = "imm-translation-block";
 export const FAILED_CLASS = "imm-translation-failed";
 
-export const MIN_PARAGRAPH_LENGTH = 15;
+export const MIN_PARAGRAPH_LENGTH = 5;
 export const MAX_BATCH_ITEMS = 15;
 export const MAX_BATCH_CHARS = 2500;
 export const MAX_CONCURRENT_BATCHES = 5;
