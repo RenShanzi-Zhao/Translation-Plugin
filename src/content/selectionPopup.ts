@@ -26,10 +26,41 @@ export function showSelectionPopupLoading(x: number, y: number, text: string) {
   popup.classList.remove("hidden");
 }
 
-export function showSelectionPopupSuccess(x: number, y: number, translatedText: string) {
+type SuccessActions = {
+  onAddVocabulary?: () => void;
+  added?: boolean;
+};
+
+export function showSelectionPopupSuccess(
+  x: number,
+  y: number,
+  translatedText: string,
+  actions?: SuccessActions
+) {
   const popup = ensureSelectionPopup();
   popup.querySelector(".imm-selection-popup-status")!.textContent = "译文";
   popup.querySelector(".imm-selection-popup-text")!.textContent = translatedText;
+
+  let actionRow = popup.querySelector(".imm-selection-popup-actions") as HTMLDivElement | null;
+  if (!actionRow) {
+    actionRow = document.createElement("div");
+    actionRow.className = "imm-selection-popup-actions";
+    popup.appendChild(actionRow);
+  }
+
+  actionRow.innerHTML = "";
+  const button = document.createElement("button");
+  button.className = "imm-selection-popup-add";
+  button.textContent = actions?.added ? "已加入词库" : "加入词库";
+  button.disabled = Boolean(actions?.added);
+  if (actions?.onAddVocabulary && !actions?.added) {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      actions.onAddVocabulary?.();
+    });
+  }
+  actionRow.appendChild(button);
+
   popup.style.left = `${Math.min(x, window.innerWidth - 340)}px`;
   popup.style.top = `${y + 10}px`;
   popup.classList.remove("hidden");

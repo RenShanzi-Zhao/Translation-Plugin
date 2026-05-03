@@ -5,6 +5,7 @@ import {
   showSelectionPopupError,
   hideSelectionPopup,
 } from "./selectionPopup";
+import { addVocabularyItem, hasVocabularyItem } from "../shared/vocabulary";
 import type { BgResponse } from "../shared/types";
 
 function isSelectionResult(
@@ -47,29 +48,52 @@ export function setupSelectionTranslation(getTargetLang: () => string) {
         showSelectionPopupError(
           event.clientX,
           event.clientY,
-          response.error.message || "缈昏瘧澶辫触"
+          response.error.message || "翻译失败"
         );
         return;
       }
 
       if (isSelectionResult(response)) {
+        const sourceUrl = location.href;
+        const alreadyAdded = await hasVocabularyItem(selection, sourceUrl);
+
         showSelectionPopupSuccess(
           event.clientX,
           event.clientY,
-          response.translatedText
+          response.translatedText,
+          {
+            added: alreadyAdded,
+            onAddVocabulary: async () => {
+              await addVocabularyItem({
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                term: selection,
+                translation: response.translatedText,
+                context: selection,
+                sourceUrl,
+                createdAt: new Date().toISOString(),
+              });
+
+              showSelectionPopupSuccess(
+                event.clientX,
+                event.clientY,
+                response.translatedText,
+                { added: true }
+              );
+            },
+          }
         );
       } else {
         showSelectionPopupError(
           event.clientX,
           event.clientY,
-          "鏈煡鍝嶅簲绫诲瀷"
+          "未知响应类型"
         );
       }
     } catch (err: any) {
       showSelectionPopupError(
         event.clientX,
         event.clientY,
-        err.message || "缈昏瘧澶辫触"
+        err.message || "翻译失败"
       );
     }
   });

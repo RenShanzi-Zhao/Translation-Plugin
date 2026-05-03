@@ -44,3 +44,22 @@
   0%, 100% { opacity: 0.3; transform: scale(0.8); }
   50% { opacity: 1; transform: scale(1.2); }
 }
+
+.imm-selection-popup-actions {
+  margin-top: 10px;
+}
+
+.imm-selection-popup-add {
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.imm-selection-popup-add:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
