@@ -1,5 +1,3 @@
-import { sendToBackground } from "../shared/messaging";
-
 export type SelectionPopupState = "idle" | "loading" | "success" | "error";
 
 export function ensureSelectionPopup(): HTMLDivElement {
@@ -21,7 +19,7 @@ export function ensureSelectionPopup(): HTMLDivElement {
 
 export function showSelectionPopupLoading(x: number, y: number, text: string) {
   const popup = ensureSelectionPopup();
-  popup.querySelector(".imm-selection-popup-status")!.textContent = "翻译中...";
+  popup.querySelector(".imm-selection-popup-status")!.textContent = "翻译官正在路上...";
   popup.querySelector(".imm-selection-popup-text")!.textContent = text;
   popup.style.left = `${Math.min(x, window.innerWidth - 340)}px`;
   popup.style.top = `${y + 10}px`;

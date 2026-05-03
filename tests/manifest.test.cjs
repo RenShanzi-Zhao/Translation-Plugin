@@ -9,6 +9,6 @@ const manifest = JSON.parse(manifestText);
 assert.equal(manifest.manifest_version, 3);
 assert.equal(manifest.action?.default_popup, undefined);
 assert.ok(manifest.commands?.translate, "expected translate command to be declared");
-assert.deepEqual(manifest.content_scripts?.[0]?.css, ["content/floating.css"]);
+assert.deepEqual(manifest.content_scripts?.[0]?.css, ["content/floating.css", "content/selectionPopup.css"]);
 
 console.log("manifest test passed");

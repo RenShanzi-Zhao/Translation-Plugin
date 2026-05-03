@@ -16,7 +16,7 @@ export function insertPendingBlock(itemId: string, nodeMap: Map<string, HTMLElem
   const pendingBlock = document.createElement("div");
   pendingBlock.className = `${TRANSLATION_BLOCK_CLASS} imm-translation-pending`;
   pendingBlock.setAttribute(TRANSLATION_FOR_ATTR, itemId);
-  pendingBlock.textContent = "翻译中...";
+  pendingBlock.textContent = "翻译官正在路上...";
 
   originalNode.parentNode?.insertBefore(pendingBlock, originalNode.nextSibling);
 }

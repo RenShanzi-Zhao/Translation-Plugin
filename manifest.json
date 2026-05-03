@@ -28,7 +28,7 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content/index.js"],
-      "css": ["content/floating.css"],
+      "css": ["content/floating.css", "content/selectionPopup.css"],
       "run_at": "document_idle"
     }
   ],

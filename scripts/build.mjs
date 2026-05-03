@@ -40,10 +40,13 @@ if (existsSync(resolve(root, "icons"))) {
   cpSync(resolve(root, "icons"), resolve(root, "dist/icons"), { recursive: true });
 }
 
-const floatingCss = resolve(root, "src/content/floating.css");
-if (existsSync(floatingCss)) {
-  mkdirSync(resolve(root, "dist/content"), { recursive: true });
-  cpSync(floatingCss, resolve(root, "dist/content/floating.css"));
+const contentCssFiles = ["floating.css", "selectionPopup.css"];
+for (const cssFile of contentCssFiles) {
+  const src = resolve(root, "src/content", cssFile);
+  if (existsSync(src)) {
+    mkdirSync(resolve(root, "dist/content"), { recursive: true });
+    cpSync(src, resolve(root, `dist/content/${cssFile}`));
+  }
 }
 
 console.log("\nBuild complete -> dist/");
