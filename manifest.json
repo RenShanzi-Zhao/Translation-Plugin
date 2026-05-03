@@ -3,7 +3,7 @@
   "name": "Immersive Translator",
   "version": "0.2.0",
   "description": "Immersive bilingual translation extension for Edge.",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
   "options_page": "options/index.html",
   "action": {
     "default_icon": {

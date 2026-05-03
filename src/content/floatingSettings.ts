@@ -145,7 +145,7 @@ export function createSettingsPanel(
   const vocabBtn = panel.querySelector("#imm-panel-vocab") as HTMLButtonElement;
   vocabBtn.addEventListener("click", () => {
     const url = chrome.runtime.getURL("options/vocabulary.html");
-    window.open(url, "_blank");
+    chrome.tabs.create({ url });
   });
 
   panel.addEventListener("mousedown", (e) => e.stopPropagation());
