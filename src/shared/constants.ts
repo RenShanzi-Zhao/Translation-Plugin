@@ -16,7 +16,7 @@ export const EXCLUDED_TAGS = new Set([
 ]);
 
 export const EXCLUDED_CONTAINER_TAGS = new Set([
-  "nav", "footer", "aside",
+  "footer", "aside",
 ]);
 
 export const EXCLUDED_SELECTORS = [
