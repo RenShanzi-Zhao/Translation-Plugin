@@ -1,6 +1,6 @@
 import { findMainContentContainer } from "./core/selectors";
 import { extractAllTextNodes, buildTranslateItems } from "./core/extract";
-import { replaceTranslationsDirectly, markBatchFailed, removeAllTranslations } from "./core/inject";
+import { injectTranslations, markBatchFailed, removeAllTranslations } from "./core/inject";
 import {
   createFloatingButton,
   setFloatingButtonTranslating,
@@ -22,7 +22,7 @@ const lazyTranslation = createLazyTranslationController(
     isTranslating = true;
     try {
       const results = await translateOneBatch(batch, "auto", targetLang);
-      replaceTranslationsDirectly(results, currentNodeMap);
+      injectTranslations(results, currentNodeMap);
     } catch {
       markBatchFailed(batch, currentNodeMap);
     } finally {
