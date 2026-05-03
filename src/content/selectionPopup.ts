@@ -19,7 +19,7 @@ export function ensureSelectionPopup(): HTMLDivElement {
 
 export function showSelectionPopupLoading(x: number, y: number, text: string) {
   const popup = ensureSelectionPopup();
-  popup.querySelector(".imm-selection-popup-status")!.textContent = "翻译官正在路上...";
+  popup.querySelector(".imm-selection-popup-status")!.innerHTML = '<span class="imm-selection-pulse"></span> 翻译官正在路上...';
   popup.querySelector(".imm-selection-popup-text")!.textContent = text;
   popup.style.left = `${Math.min(x, window.innerWidth - 340)}px`;
   popup.style.top = `${y + 10}px`;
