@@ -24,7 +24,10 @@ export default defineConfig(({ mode }) => {
       build: {
         outDir: resolve(__dirname, "dist/options"),
         rollupOptions: {
-          input: resolve(__dirname, "src/options/index.html"),
+          input: {
+            index: resolve(__dirname, "src/options/index.html"),
+            vocabulary: resolve(__dirname, "src/options/vocabulary.html"),
+          },
         },
         emptyOutDir: true,
         sourcemap: false,
