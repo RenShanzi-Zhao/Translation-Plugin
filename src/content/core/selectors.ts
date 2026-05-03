@@ -1,4 +1,4 @@
-import { CONTENT_SELECTORS, EXCLUDED_CONTAINER_TAGS, EXCLUDED_SELECTORS } from "../shared/constants";
+import { CONTENT_SELECTORS, EXCLUDED_CONTAINER_TAGS, EXCLUDED_SELECTORS } from "../../shared/constants";
 
 function scoreCandidate(el: Element): number {
   let score = 0;

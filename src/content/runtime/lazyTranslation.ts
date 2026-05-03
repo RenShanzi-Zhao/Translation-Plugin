@@ -1,5 +1,5 @@
-import { TRANSLATED_ATTR, MAX_BATCH_ITEMS } from "../shared/constants";
-import type { TranslateItem } from "../shared/types";
+import { TRANSLATED_ATTR, MAX_BATCH_ITEMS } from "../../shared/constants";
+import type { TranslateItem } from "../../shared/types";
 
 type TranslateBatch = (batch: TranslateItem[], targetLang: string) => Promise<void>;
 type IsBusy = () => boolean;

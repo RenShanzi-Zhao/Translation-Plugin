@@ -5,7 +5,7 @@ const { resolve } = require("node:path");
 const indexSource = readFileSync(resolve(process.cwd(), "src/content/index.ts"), "utf8");
 const backgroundSource = readFileSync(resolve(process.cwd(), "src/background/index.ts"), "utf8");
 const selectionTranslationSource = readFileSync(
-  resolve(process.cwd(), "src/content/selectionTranslation.ts"),
+  resolve(process.cwd(), "src/content/selection/selectionTranslation.ts"),
   "utf8"
 );
 

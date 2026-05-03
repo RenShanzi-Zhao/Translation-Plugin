@@ -3,16 +3,16 @@ const { existsSync, readFileSync } = require("node:fs");
 const { resolve } = require("node:path");
 
 assert.equal(
-  existsSync(resolve(process.cwd(), "src/content/floatingButtonController.ts")),
+  existsSync(resolve(process.cwd(), "src/content/floating/floatingButtonController.ts")),
   true
 );
 assert.equal(
-  existsSync(resolve(process.cwd(), "src/content/floatingOverlayController.ts")),
+  existsSync(resolve(process.cwd(), "src/content/floating/floatingOverlayController.ts")),
   true
 );
 
 const floatingSource = readFileSync(
-  resolve(process.cwd(), "src/content/floating.ts"),
+  resolve(process.cwd(), "src/content/floating/floating.ts"),
   "utf8"
 );
 

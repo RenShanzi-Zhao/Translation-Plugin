@@ -1,5 +1,5 @@
-import { MAX_BATCH_ITEMS, MAX_BATCH_CHARS } from "../shared/constants";
-import type { TranslateItem } from "../shared/types";
+import { MAX_BATCH_ITEMS, MAX_BATCH_CHARS } from "../../shared/constants";
+import type { TranslateItem } from "../../shared/types";
 
 export function splitIntoBatches(items: TranslateItem[]): TranslateItem[][] {
   const batches: TranslateItem[][] = [];

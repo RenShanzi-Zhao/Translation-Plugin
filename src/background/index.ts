@@ -1,5 +1,6 @@
 import { onMessage } from "../shared/messaging";
 import { testConnection, translateBatch, translateSelectionText } from "./translate";
+import { generateVocabularyExample } from "./vocabularyExample";
 import type { ContentToBgMessage } from "../shared/types";
 
 onMessage(async (message: ContentToBgMessage) => {
@@ -57,6 +58,32 @@ onMessage(async (message: ContentToBgMessage) => {
         error: { code: err.code || "INTERNAL_ERROR", message: err.message || "Unknown error" },
       };
     }
+  }
+
+  if (message.type === "GENERATE_VOCAB_EXAMPLE") {
+    try {
+      const result = await generateVocabularyExample(message.term, message.translation);
+      return {
+        type: "GENERATE_VOCAB_EXAMPLE_RESULT",
+        exampleSentence: result.exampleSentence,
+        exampleTranslation: result.exampleTranslation,
+      };
+    } catch {
+      return {
+        type: "GENERATE_VOCAB_EXAMPLE_RESULT",
+        exampleSentence: "",
+        exampleTranslation: "",
+      };
+    }
+  }
+
+  if (message.type === "OPEN_VOCABULARY_PAGE") {
+    const url = chrome.runtime.getURL("options/vocabulary.html");
+    await chrome.tabs.create({ url });
+    return {
+      type: "OPEN_VOCABULARY_PAGE_RESULT",
+      ok: true,
+    };
   }
 
   return {

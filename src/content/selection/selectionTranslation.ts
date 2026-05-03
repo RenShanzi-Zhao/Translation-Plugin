@@ -1,12 +1,15 @@
-import { sendToBackground } from "../shared/messaging";
+import { sendToBackground } from "../../shared/messaging";
 import {
   showSelectionPopupLoading,
   showSelectionPopupSuccess,
   showSelectionPopupError,
   hideSelectionPopup,
 } from "./selectionPopup";
-import { addVocabularyItem, hasVocabularyItem } from "../shared/vocabulary";
-import type { BgResponse } from "../shared/types";
+import {
+  getVocabularySelectionState,
+  saveSelectionToVocabulary,
+} from "./selectionVocabulary";
+import type { BgResponse } from "../../shared/types";
 
 function isSelectionResult(
   response: BgResponse
@@ -55,7 +58,8 @@ export function setupSelectionTranslation(getTargetLang: () => string) {
 
       if (isSelectionResult(response)) {
         const sourceUrl = location.href;
-        const alreadyAdded = await hasVocabularyItem(selection, sourceUrl);
+        const targetLang = getTargetLang();
+        const alreadyAdded = await getVocabularySelectionState(selection, sourceUrl, targetLang);
 
         showSelectionPopupSuccess(
           event.clientX,
@@ -64,13 +68,12 @@ export function setupSelectionTranslation(getTargetLang: () => string) {
           {
             added: alreadyAdded,
             onAddVocabulary: async () => {
-              await addVocabularyItem({
-                id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                term: selection,
-                translation: response.translatedText,
-                context: selection,
+              await saveSelectionToVocabulary({
+                selection,
+                translatedText: response.translatedText,
                 sourceUrl,
-                createdAt: new Date().toISOString(),
+                sourceTitle: document.title,
+                targetLang,
               });
 
               showSelectionPopupSuccess(

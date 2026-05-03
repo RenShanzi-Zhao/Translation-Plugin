@@ -6,8 +6,8 @@ const optionsHtml = readFileSync(resolve(process.cwd(), "src/options/index.html"
 const optionsMain = readFileSync(resolve(process.cwd(), "src/options/main.ts"), "utf8");
 const backgroundIndex = readFileSync(resolve(process.cwd(), "src/background/index.ts"), "utf8");
 const typesSource = readFileSync(resolve(process.cwd(), "src/shared/types.ts"), "utf8");
-const productSpec = readFileSync(resolve(process.cwd(), "docs/2026-05-02-mvp-product-spec.md"), "utf8");
-const technicalSpec = readFileSync(resolve(process.cwd(), "docs/2026-05-02-mvp-technical-design.md"), "utf8");
+const productSpec = readFileSync(resolve(process.cwd(), "docs/product-spec.md"), "utf8");
+const technicalSpec = readFileSync(resolve(process.cwd(), "docs/technical-design.md"), "utf8");
 
 assert.match(optionsHtml, /id="test-connection"/);
 assert.match(optionsMain, /test-connection/);

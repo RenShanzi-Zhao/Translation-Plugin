@@ -1,3 +1,4 @@
+import { sendToBackground } from "../../shared/messaging";
 import { formatShortcutFromKeyboardEvent } from "./floatingShortcut";
 
 export type FloatingSettingsState = {
@@ -143,9 +144,12 @@ export function createSettingsPanel(
   });
 
   const vocabBtn = panel.querySelector("#imm-panel-vocab") as HTMLButtonElement;
-  vocabBtn.addEventListener("click", () => {
-    const url = chrome.runtime.getURL("options/vocabulary.html");
-    chrome.tabs.create({ url });
+  vocabBtn.addEventListener("click", async () => {
+    try {
+      await sendToBackground({ type: "OPEN_VOCABULARY_PAGE" });
+    } catch (error) {
+      console.error("Failed to open vocabulary page", error);
+    }
   });
 
   panel.addEventListener("mousedown", (e) => e.stopPropagation());

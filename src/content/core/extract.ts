@@ -1,6 +1,6 @@
-import { EXCLUDED_TAGS, MIN_PARAGRAPH_LENGTH, TRANSLATED_ATTR } from "../shared/constants";
+import { EXCLUDED_TAGS, MIN_PARAGRAPH_LENGTH, TRANSLATED_ATTR } from "../../shared/constants";
 import { isInsideExcludedRegion } from "./selectors";
-import type { TranslateItem } from "../shared/types";
+import type { TranslateItem } from "../../shared/types";
 
 let idCounter = 0;
 

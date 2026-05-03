@@ -1,6 +1,6 @@
-import { MAX_CONCURRENT_BATCHES } from "../shared/constants";
-import { sendToBackground } from "../shared/messaging";
-import type { BgResponse, TranslateItem, TranslationResult } from "../shared/types";
+import { MAX_CONCURRENT_BATCHES } from "../../shared/constants";
+import { sendToBackground } from "../../shared/messaging";
+import type { BgResponse, TranslateItem, TranslationResult } from "../../shared/types";
 import { splitIntoBatches } from "./batching";
 import { injectTranslations, insertPendingBlock, markBatchFailed } from "./inject";
 

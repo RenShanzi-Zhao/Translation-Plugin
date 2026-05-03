@@ -1,4 +1,8 @@
-import { getVocabulary, removeVocabularyItem } from "../shared/vocabulary";
+import {
+  getVocabulary,
+  removeVocabularyItem,
+  toggleVocabularyMastered,
+} from "../shared/vocabulary";
 
 async function renderVocabulary() {
   const list = document.getElementById("vocabulary-list")!;
@@ -15,16 +19,40 @@ async function renderVocabulary() {
   list.innerHTML = items
     .map(
       (item) => `
-      <div class="vocab-item">
-        <div class="vocab-term">${escapeHtml(item.term)}</div>
-        <div class="vocab-translation">${escapeHtml(item.translation)}</div>
-        <div class="vocab-context">${escapeHtml(item.context)}</div>
-        <div class="vocab-meta">${escapeHtml(item.sourceUrl)} · ${item.createdAt}</div>
-        <button class="vocab-remove" data-id="${item.id}">删除</button>
-      </div>
+      <article class="vocab-card">
+        <div class="vocab-card-top">
+          <h2 class="vocab-term">${escapeHtml(item.term)}</h2>
+          <button class="mastery-toggle" data-id="${item.id}">
+            ${item.mastered ? "已掌握" : "未掌握"}
+          </button>
+        </div>
+        <p class="vocab-translation">${escapeHtml(item.translation)}</p>
+        ${
+          item.exampleSentence
+            ? `<p class="vocab-example">${escapeHtml(item.exampleSentence)}</p>`
+            : ""
+        }
+        ${
+          item.exampleTranslation
+            ? `<p class="vocab-example-translation">${escapeHtml(item.exampleTranslation)}</p>`
+            : ""
+        }
+        <div class="vocab-card-footer">
+          <span class="vocab-count">划线 ${item.selectionCount} 次</span>
+          <button class="vocab-remove" data-id="${item.id}">删除</button>
+        </div>
+      </article>
     `
     )
     .join("");
+
+  list.querySelectorAll(".mastery-toggle").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = (btn as HTMLElement).dataset.id!;
+      await toggleVocabularyMastered(id);
+      await renderVocabulary();
+    });
+  });
 
   list.querySelectorAll(".vocab-remove").forEach((btn) => {
     btn.addEventListener("click", async () => {

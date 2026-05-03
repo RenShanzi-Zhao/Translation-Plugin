@@ -1,17 +1,23 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>词汇库</title>
-  <link rel="stylesheet" href="./vocabulary.css" />
-</head>
-<body>
-  <div id="app">
-    <h1>个人词汇库</h1>
-    <div id="vocabulary-list"></div>
-    <p id="empty-state" class="hidden">暂无词汇。使用划词翻译后点击"加入词库"即可收藏。</p>
-  </div>
-  <script type="module" src="./vocabulary.ts"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>个人词汇库</title>
+    <link rel="stylesheet" href="./vocabulary.css" />
+  </head>
+  <body>
+    <div id="app" class="page-shell">
+      <header class="page-header">
+        <p class="eyebrow">Vocabulary</p>
+        <h1>个人词汇库</h1>
+        <p class="subtitle">把你划线保存的词句整理成干净、可回看的小卡片。</p>
+      </header>
+      <div id="vocabulary-list" class="vocab-list"></div>
+      <p id="empty-state" class="empty-state hidden">
+        这里还没有词条。使用划词翻译后点击“加入词汇库”，就会出现在这里。
+      </p>
+    </div>
+    <script type="module" src="./vocabulary.ts"></script>
+  </body>
 </html>

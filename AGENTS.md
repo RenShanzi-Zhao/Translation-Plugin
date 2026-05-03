@@ -39,7 +39,7 @@ Vite runs 3 separate builds via `scripts/build.mjs`:
 2. **Content** - IIFE entry at `src/content/index.ts`, output to `dist/content/index.js`
 3. **Options** - entry at `src/options/main.ts` and `src/options/vocabulary.ts`, output to `dist/options/`
 
-After builds, `manifest.json`, `icons/`, `src/content/floating.css`, and `src/content/selectionPopup.css` are copied to `dist/`.
+After builds, `manifest.json`, `icons/`, `src/content/floating/floating.css`, and `src/content/selection/selectionPopup.css` are copied to `dist/`.
 
 ## Directory Structure
 
@@ -47,40 +47,49 @@ After builds, `manifest.json`, `icons/`, `src/content/floating.css`, and `src/co
 src/
   background/
     index.ts                     # Service worker entry and message handler
-    translate.ts                 # LLM API call, prompt construction, response parsing
+    llmClient.ts                 # Shared chat-completions helpers and runtime config wiring
+    translate.ts                 # Paragraph and selection translation logic
+    vocabularyExample.ts         # Save-time vocabulary example generation
   content/
     index.ts                     # Main entry: orchestrates translation, button init, lazy loading, SPA monitoring
-    extract.ts                   # Paragraph extraction with filtering
-    inject.ts                    # Translation block insertion/removal and status transitions
-    selectors.ts                 # Content area detection (semantic + heuristic scoring)
-    batching.ts                  # Batch splitting logic
-    orchestrator.ts              # Batch translation dispatch with concurrency control
-    lazyTranslation.ts           # IntersectionObserver controller for viewport lazy loading
-    spaMonitoring.ts             # MutationObserver controller for SPA dynamic content
-    floating.ts                  # Floating UI composition entrypoint and public API
-    floatingButtonController.ts  # Floating button DOM, drag, edge hide, and animation behavior
-    floatingOverlayController.ts # Gear and settings panel coordination
-    floatingSettings.ts          # Settings panel UI, load/save settings, FloatingSettingsState type
-    floatingProgress.ts          # Progress bar creation and updates
-    floatingShortcut.ts          # Keyboard shortcut formatting and binding
-    floating.css                 # Floating button and settings panel styles
-    selectionTranslation.ts      # Ctrl+selection detection and popup binding
-    selectionPopup.ts            # Selection translation popup UI (loading/success/error states)
-    selectionPopup.css           # Selection popup styles
-    translationStatus.ts         # TranslationBlockState type (pending/success/failed)
+    core/
+      extract.ts                 # Paragraph extraction with filtering
+      inject.ts                  # Translation block insertion/removal and status transitions
+      selectors.ts               # Content area detection (semantic + heuristic scoring)
+      batching.ts                # Batch splitting logic
+      orchestrator.ts            # Batch translation dispatch with concurrency control
+      translationStatus.ts       # TranslationBlockState type (pending/success/failed)
+    runtime/
+      lazyTranslation.ts         # IntersectionObserver controller for viewport lazy loading
+      spaMonitoring.ts           # MutationObserver controller for SPA dynamic content
+    floating/
+      floating.ts                # Floating UI composition entrypoint and public API
+      floatingButtonController.ts  # Floating button DOM, drag, edge hide, and animation behavior
+      floatingOverlayController.ts # Gear and settings panel coordination
+      floatingSettings.ts        # Settings panel UI, load/save settings, FloatingSettingsState type
+      floatingProgress.ts        # Progress bar creation and updates
+      floatingShortcut.ts        # Keyboard shortcut formatting and binding
+      floating.css               # Floating button and settings panel styles
+    selection/
+      selectionTranslation.ts    # Ctrl+selection detection and popup binding
+      selectionVocabulary.ts     # Vocabulary save orchestration for selection translation
+      selectionPopup.ts          # Selection translation popup UI (loading/success/error states)
+      selectionPopup.css         # Selection popup styles
   shared/
     config.ts                    # Runtime config loading
     constants.ts                 # DOM attrs, batch limits, excluded tags/selectors
     messaging.ts                 # Chrome messaging wrappers
     types.ts                     # Shared request/response/message types
-    vocabulary.ts                # VocabularyItem type + chrome.storage.local CRUD
+    vocabulary.ts                # Facade exports for vocabulary model and store
+    vocabularyModel.ts           # Vocabulary types, normalization, and match rules
+    vocabularyStore.ts           # Vocabulary storage reads/writes and behavior helpers
   options/
     index.html                   # API config page
     main.ts                      # Config form logic
     style.css                    # Options page styles
     vocabulary.html              # Personal vocabulary list page
-    vocabulary.ts                # Vocabulary list render + delete
-    vocabulary.css               # Vocabulary list styles
+    vocabulary.ts                # Compact vocabulary card render, mastery toggle, delete
+    vocabulary.css               # Vocabulary library visual design
 ```
 
 ## Environment Configuration
@@ -117,7 +126,7 @@ API key is baked into the build via `import.meta.env`. For production, switch to
 - `orchestrator.ts` uses `isTranslateResult()` type guard for safe response handling.
 - **Selection translation**: hold `Ctrl` and select text -> popup appears near the selection with loading state -> popup shows translated result. `SELECTION_TRANSLATE` goes to background and returns `SELECTION_TRANSLATE_RESULT`. Popup closes on `Esc` or click outside.
 - **Live translation status**: paragraph translation inserts pending blocks before batch results arrive, then replaces them with success or failed state. Pending insertion is handled through `insertPendingBlock()` in `inject.ts`.
-- **Personal vocabulary**: `VocabularyItem` values are stored in `chrome.storage.local["imm-vocabulary"]`. CRUD lives in `src/shared/vocabulary.ts`. `options/vocabulary.html` renders the vocabulary list and supports deletion. The "add to vocabulary" action is not yet wired into the selection popup.
+- **Personal vocabulary**: vocabulary entries are stored in `chrome.storage.local["imm-vocabulary"]`. `src/shared/vocabularyModel.ts` owns normalization and matching rules, `src/shared/vocabularyStore.ts` owns reads/writes and helper actions, and `src/shared/vocabulary.ts` re-exports the public surface. Selection translation delegates vocabulary save orchestration to `src/content/selection/selectionVocabulary.ts`, and save-time example generation lives in `src/background/vocabularyExample.ts`.
 - **PDF status**: native Edge PDF translation is currently deferred. Investigation showed that native PDF text selection is not exposed through standard `window.getSelection()` even when script injection succeeds.
 
 ## Translation Flow
@@ -132,7 +141,7 @@ API key is baked into the build via `import.meta.env`. For production, switch to
 
 ## Reference Docs
 
-- `docs/2026-05-02-mvp-product-spec.md` - product requirements and scope
-- `docs/2026-05-02-mvp-technical-design.md` - architecture, selectors, batching, node marking
-- `docs/2026-05-02-translation-api-spec.md` - API request/response format and error codes
-- `docs/superpowers/plans/2026-05-03-selection-pdf-status-vocab-roadmap.md` - selection translation, PDF support, live status, vocabulary roadmap
+- `docs/product-spec.md` - product requirements and scope
+- `docs/technical-design.md` - architecture, selectors, batching, node marking
+- `docs/translation-api-spec.md` - API request/response format and error codes
+- `docs/vocabulary-library-redesign.md` - current vocabulary library direction and UI/content model

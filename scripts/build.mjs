@@ -42,7 +42,8 @@ if (existsSync(resolve(root, "icons"))) {
 
 const contentCssFiles = ["floating.css", "selectionPopup.css"];
 for (const cssFile of contentCssFiles) {
-  const src = resolve(root, "src/content", cssFile);
+  const sourceDir = cssFile === "floating.css" ? "src/content/floating" : "src/content/selection";
+  const src = resolve(root, sourceDir, cssFile);
   if (existsSync(src)) {
     mkdirSync(resolve(root, "dist/content"), { recursive: true });
     cpSync(src, resolve(root, `dist/content/${cssFile}`));

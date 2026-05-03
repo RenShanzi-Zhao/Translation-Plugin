@@ -5,7 +5,20 @@ const { resolve } = require("node:path");
 assert.ok(existsSync(resolve(process.cwd(), "src/shared/vocabulary.ts")));
 assert.ok(existsSync(resolve(process.cwd(), "src/options/vocabulary.html")));
 
-const productSpec = readFileSync(resolve(process.cwd(), "docs/2026-05-02-mvp-product-spec.md"), "utf8");
-assert.match(productSpec, /词汇库/);
+const selectionTranslationSource = readFileSync(
+  resolve(process.cwd(), "src/content/selection/selectionTranslation.ts"),
+  "utf8"
+);
+const selectionVocabularySource = readFileSync(
+  resolve(process.cwd(), "src/content/selection/selectionVocabulary.ts"),
+  "utf8"
+);
+
+assert.match(selectionTranslationSource, /selectionVocabulary/);
+assert.match(selectionTranslationSource, /saveSelectionToVocabulary/);
+assert.match(selectionVocabularySource, /GENERATE_VOCAB_EXAMPLE/);
+assert.match(selectionVocabularySource, /exampleSentence/);
+assert.match(selectionVocabularySource, /exampleTranslation/);
+assert.match(selectionVocabularySource, /upsertVocabularyItem/);
 
 console.log("vocabulary test passed");

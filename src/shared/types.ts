@@ -44,13 +44,21 @@ export type ContentToBgMessage =
   | { type: "TRANSLATE_BATCH"; items: TranslateItem[]; sourceLang: string; targetLang: string }
   | { type: "TEST_CONNECTION"; config: TestConnectionPayload }
   | { type: "SELECTION_TRANSLATE"; text: string; sourceLang: string; targetLang: string }
+  | { type: "GENERATE_VOCAB_EXAMPLE"; term: string; translation: string; targetLang: string }
+  | { type: "OPEN_VOCABULARY_PAGE" }
   | { type: "PING" };
 
 export type BgToContentMessage =
   | { type: "TRANSLATE_RESULT"; translations: TranslationResult[] }
   | { type: "TRANSLATE_ERROR"; error: TranslateError }
   | { type: "TEST_CONNECTION_RESULT"; ok: boolean; message: string }
-  | { type: "SELECTION_TRANSLATE_RESULT"; translatedText: string };
+  | { type: "SELECTION_TRANSLATE_RESULT"; translatedText: string }
+  | {
+      type: "GENERATE_VOCAB_EXAMPLE_RESULT";
+      exampleSentence: string;
+      exampleTranslation: string;
+    }
+  | { type: "OPEN_VOCABULARY_PAGE_RESULT"; ok: true };
 
 export type PingResponse = { type: "PONG" };
 

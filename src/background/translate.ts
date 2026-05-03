@@ -5,23 +5,13 @@ import type {
   TestConnectionPayload,
 } from "../shared/types";
 import { REQUEST_TIMEOUT_MS, MAX_RETRIES } from "../shared/constants";
-import { getRuntimeConfig, type RuntimeConfig } from "../shared/config";
-
-function getEnvFallbackConfig() {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-  const apiKey = import.meta.env.VITE_API_KEY;
-  const model = import.meta.env.VITE_MODEL;
-  return { apiBaseUrl, apiKey, model: model || "gpt-4o-mini" };
-}
-
-function stripCodeFences(raw: string): string {
-  const trimmed = raw.trim();
-  if (!trimmed.startsWith("```")) {
-    return trimmed;
-  }
-
-  return trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-}
+import { type RuntimeConfig } from "../shared/config";
+import {
+  callChatCompletions,
+  createTimeoutController,
+  getDefaultRuntimeConfig,
+  stripCodeFences,
+} from "./llmClient";
 
 export function buildPrompt(items: TranslateItem[], sourceLang: string, targetLang: string): string {
   const serializedItems = JSON.stringify(items, null, 2);
@@ -59,22 +49,6 @@ export function parseStructuredTranslations(raw: string, itemIds: string[]): Tra
   }));
 }
 
-async function callChatCompletions(
-  config: RuntimeConfig,
-  body: Record<string, unknown>,
-  controller: AbortController
-) {
-  return fetch(`${config.apiBaseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify(body),
-    signal: controller.signal,
-  });
-}
-
 export async function testConnection(configInput: TestConnectionPayload): Promise<void> {
   const config: RuntimeConfig = {
     apiBaseUrl: configInput.apiBaseUrl.trim(),
@@ -86,8 +60,7 @@ export async function testConnection(configInput: TestConnectionPayload): Promis
     throw new Error("API Base URL and API Key are required.");
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const { controller, timeout } = createTimeoutController();
 
   try {
     const response = await callChatCompletions(
@@ -124,14 +97,13 @@ export async function translateBatch(
   sourceLang: string,
   targetLang: string
 ): Promise<TranslationResult[]> {
-  const config = await getRuntimeConfig(getEnvFallbackConfig());
+  const config = await getDefaultRuntimeConfig();
   const prompt = buildPrompt(items, sourceLang, targetLang);
 
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const { controller, timeout } = createTimeoutController();
 
     try {
       const response = await callChatCompletions(

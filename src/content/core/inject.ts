@@ -3,8 +3,8 @@ import {
   TRANSLATION_FOR_ATTR,
   TRANSLATION_BLOCK_CLASS,
   FAILED_CLASS,
-} from "../shared/constants";
-import type { TranslationResult } from "../shared/types";
+} from "../../shared/constants";
+import type { TranslationResult } from "../../shared/types";
 
 export function insertPendingBlock(itemId: string, nodeMap: Map<string, HTMLElement>) {
   const originalNode = nodeMap.get(itemId);

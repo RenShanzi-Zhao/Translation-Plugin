@@ -1,17 +1,17 @@
-import { findMainContentContainer } from "./selectors";
-import { extractTranslatableNodes, buildTranslateItems } from "./extract";
-import { injectTranslations, markBatchFailed, removeAllTranslations } from "./inject";
+import { findMainContentContainer } from "./core/selectors";
+import { extractTranslatableNodes, buildTranslateItems } from "./core/extract";
+import { injectTranslations, markBatchFailed, removeAllTranslations } from "./core/inject";
 import {
   createFloatingButton,
   setFloatingButtonTranslating,
   setupKeyboardShortcut,
   updateProgress,
   markProgressDone,
-} from "./floating";
-import { translateOneBatch, translateBatches } from "./orchestrator";
-import { createLazyTranslationController } from "./lazyTranslation";
-import { createSPAMonitoring } from "./spaMonitoring";
-import { setupSelectionTranslation } from "./selectionTranslation";
+} from "./floating/floating";
+import { translateOneBatch, translateBatches } from "./core/orchestrator";
+import { createLazyTranslationController } from "./runtime/lazyTranslation";
+import { createSPAMonitoring } from "./runtime/spaMonitoring";
+import { setupSelectionTranslation } from "./selection/selectionTranslation";
 
 let isTranslating = false;
 let currentTargetLang = "zh-CN";

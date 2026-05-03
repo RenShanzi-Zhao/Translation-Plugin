@@ -3,13 +3,13 @@ const { existsSync, readFileSync } = require("node:fs");
 const { resolve } = require("node:path");
 
 const requiredFiles = [
-  "src/content/batching.ts",
-  "src/content/orchestrator.ts",
-  "src/content/lazyTranslation.ts",
-  "src/content/spaMonitoring.ts",
-  "src/content/floatingSettings.ts",
-  "src/content/floatingProgress.ts",
-  "src/content/floatingShortcut.ts",
+  "src/content/core/batching.ts",
+  "src/content/core/orchestrator.ts",
+  "src/content/runtime/lazyTranslation.ts",
+  "src/content/runtime/spaMonitoring.ts",
+  "src/content/floating/floatingSettings.ts",
+  "src/content/floating/floatingProgress.ts",
+  "src/content/floating/floatingShortcut.ts",
 ];
 
 for (const file of requiredFiles) {
@@ -17,11 +17,11 @@ for (const file of requiredFiles) {
 }
 
 const contentIndex = readFileSync(resolve(process.cwd(), "src/content/index.ts"), "utf8");
-const floatingFacade = readFileSync(resolve(process.cwd(), "src/content/floating.ts"), "utf8");
+const floatingFacade = readFileSync(resolve(process.cwd(), "src/content/floating/floating.ts"), "utf8");
 
-assert.match(contentIndex, /from "\.\/orchestrator"/);
-assert.match(contentIndex, /from "\.\/lazyTranslation"/);
-assert.match(contentIndex, /from "\.\/spaMonitoring"/);
+assert.match(contentIndex, /from "\.\/core\/orchestrator"/);
+assert.match(contentIndex, /from "\.\/runtime\/lazyTranslation"/);
+assert.match(contentIndex, /from "\.\/runtime\/spaMonitoring"/);
 assert.match(floatingFacade, /from "\.\/floatingSettings"/);
 assert.match(floatingFacade, /from "\.\/floatingProgress"/);
 assert.match(floatingFacade, /from "\.\/floatingShortcut"/);
