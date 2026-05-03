@@ -6,6 +6,21 @@ import {
 } from "../shared/constants";
 import type { TranslationResult } from "../shared/types";
 
+export function insertPendingBlock(itemId: string, nodeMap: Map<string, HTMLElement>) {
+  const originalNode = nodeMap.get(itemId);
+  if (!originalNode) return;
+
+  const existing = document.querySelector(`[${TRANSLATION_FOR_ATTR}="${itemId}"]`);
+  if (existing) return;
+
+  const pendingBlock = document.createElement("div");
+  pendingBlock.className = `${TRANSLATION_BLOCK_CLASS} imm-translation-pending`;
+  pendingBlock.setAttribute(TRANSLATION_FOR_ATTR, itemId);
+  pendingBlock.textContent = "翻译中...";
+
+  originalNode.parentNode?.insertBefore(pendingBlock, originalNode.nextSibling);
+}
+
 export function injectTranslations(results: TranslationResult[], nodeMap: Map<string, HTMLElement>) {
   for (const result of results) {
     const originalNode = nodeMap.get(result.id);
@@ -13,18 +28,24 @@ export function injectTranslations(results: TranslationResult[], nodeMap: Map<st
 
     if (originalNode.hasAttribute(TRANSLATED_ATTR)) continue;
 
-    const translationBlock = document.createElement("div");
-    translationBlock.className = TRANSLATION_BLOCK_CLASS;
-    translationBlock.setAttribute(TRANSLATION_FOR_ATTR, result.id);
+    let translationBlock = document.querySelector(`[${TRANSLATION_FOR_ATTR}="${result.id}"]`) as HTMLElement | null;
+
+    if (!translationBlock) {
+      translationBlock = document.createElement("div");
+      translationBlock.className = TRANSLATION_BLOCK_CLASS;
+      translationBlock.setAttribute(TRANSLATION_FOR_ATTR, result.id);
+      originalNode.parentNode?.insertBefore(translationBlock, originalNode.nextSibling);
+    }
 
     if (result.translatedText) {
       translationBlock.textContent = result.translatedText;
+      translationBlock.classList.remove("imm-translation-pending");
     } else {
       translationBlock.textContent = "[翻译失败]";
       translationBlock.classList.add(FAILED_CLASS);
+      translationBlock.classList.remove("imm-translation-pending");
     }
 
-    originalNode.parentNode?.insertBefore(translationBlock, originalNode.nextSibling);
     originalNode.setAttribute(TRANSLATED_ATTR, "1");
   }
 }
@@ -34,12 +55,18 @@ export function markBatchFailed(items: { id: string }[], nodeMap: Map<string, HT
     const originalNode = nodeMap.get(item.id);
     if (!originalNode || originalNode.hasAttribute(TRANSLATED_ATTR)) continue;
 
-    const failedBlock = document.createElement("div");
-    failedBlock.className = `${TRANSLATION_BLOCK_CLASS} ${FAILED_CLASS}`;
-    failedBlock.setAttribute(TRANSLATION_FOR_ATTR, item.id);
-    failedBlock.textContent = "[翻译失败]";
+    let failedBlock = document.querySelector(`[${TRANSLATION_FOR_ATTR}="${item.id}"]`) as HTMLElement | null;
 
-    originalNode.parentNode?.insertBefore(failedBlock, originalNode.nextSibling);
+    if (!failedBlock) {
+      failedBlock = document.createElement("div");
+      failedBlock.className = `${TRANSLATION_BLOCK_CLASS} ${FAILED_CLASS}`;
+      failedBlock.setAttribute(TRANSLATION_FOR_ATTR, item.id);
+      originalNode.parentNode?.insertBefore(failedBlock, originalNode.nextSibling);
+    }
+
+    failedBlock.textContent = "[翻译失败]";
+    failedBlock.classList.add(FAILED_CLASS);
+    failedBlock.classList.remove("imm-translation-pending");
     originalNode.setAttribute(TRANSLATED_ATTR, "1");
   }
 }

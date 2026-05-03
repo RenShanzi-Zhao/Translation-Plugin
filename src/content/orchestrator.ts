@@ -2,7 +2,7 @@ import { MAX_CONCURRENT_BATCHES } from "../shared/constants";
 import { sendToBackground } from "../shared/messaging";
 import type { BgResponse, TranslateItem, TranslationResult } from "../shared/types";
 import { splitIntoBatches } from "./batching";
-import { injectTranslations, markBatchFailed } from "./inject";
+import { injectTranslations, insertPendingBlock, markBatchFailed } from "./inject";
 
 type ProgressCallback = (done: number, total: number) => void;
 
@@ -47,6 +47,10 @@ export async function translateBatches(
   async function runNext() {
     while (index < batches.length) {
       const batch = batches[index++];
+
+      for (const item of batch) {
+        insertPendingBlock(item.id, nodeMap);
+      }
 
       try {
         const results = await translateOneBatch(batch, sourceLang, targetLang);
