@@ -39,23 +39,37 @@ src/
     index.ts          # Service worker entry, message handler
     translate.ts      # LLM API call, prompt construction, response parsing
   content/
-    index.ts          # Main entry: orchestrates translation, init floating button, lazy loading, SPA
-    extract.ts        # Paragraph extraction with filtering
-    inject.ts         # Translation block insertion/removal
-    selectors.ts      # Content area detection (semantic + heuristic scoring)
-    batching.ts       # Batch splitting logic
-    orchestrator.ts   # Batch translation dispatch with concurrency control + type-safe response handling
-    lazyTranslation.ts  # IntersectionObserver controller for viewport lazy loading
-    spaMonitoring.ts  # MutationObserver controller for SPA dynamic content
-    floating.ts       # Floating button: drag, hover gear, settings panel, keyboard shortcut, progress bar
-    floatingSettings.ts  # Settings panel UI, load/save settings, FloatingSettingsState type
-    floatingProgress.ts  # Progress bar creation and updates
-    floatingShortcut.ts  # Keyboard shortcut formatting and binding
-    floating.css      # Floating button and settings panel styles
+    index.ts              # Main entry: orchestrates translation, init floating button, lazy loading, SPA
+    extract.ts            # Paragraph extraction with filtering
+    inject.ts             # Translation block insertion/removal (live pending/success/failed states)
+    selectors.ts          # Content area detection (semantic + heuristic scoring)
+    batching.ts           # Batch splitting logic
+    orchestrator.ts       # Batch translation dispatch with concurrency control + type-safe response handling
+    lazyTranslation.ts    # IntersectionObserver controller for viewport lazy loading
+    spaMonitoring.ts      # MutationObserver controller for SPA dynamic content
+    floating.ts           # Floating button: drag, hover gear, settings panel, keyboard shortcut, progress bar
+    floatingSettings.ts   # Settings panel UI, load/save settings, FloatingSettingsState type
+    floatingProgress.ts   # Progress bar creation and updates
+    floatingShortcut.ts   # Keyboard shortcut formatting and binding
+    floating.css          # Floating button and settings panel styles
+    selectionTranslation.ts # Ctrl+selection detection and popup binding
+    selectionPopup.ts     # Selection translation popup UI (loading/success/error states)
+    selectionPopup.css    # Selection popup styles
+    pdfDetection.ts       # PDF page detection (pathname/contentType)
+    pdfTranslation.ts     # PDF selection support bridge
+    translationStatus.ts  # TranslationBlockState type (pending/success/failed)
   shared/
-    constants.ts      # DOM attrs, batch limits, excluded tags/selectors
-    messaging.ts      # Chrome messaging wrappers
-    types.ts          # TranslateItem, TranslationResult, message types, BgResponse
+    constants.ts          # DOM attrs, batch limits, excluded tags/selectors
+    messaging.ts          # Chrome messaging wrappers
+    types.ts              # TranslateItem, TranslationResult, message types, BgResponse
+    vocabulary.ts         # VocabularyItem type + chrome.storage.local CRUD
+  options/
+    index.html            # API config page
+    main.ts               # Config form logic
+    style.css             # Options page styles
+    vocabulary.html       # Personal vocabulary list page
+    vocabulary.ts         # Vocabulary list render + delete
+    vocabulary.css        # Vocabulary list styles
 
 ## Environment Configuration
 
