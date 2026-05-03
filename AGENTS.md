@@ -2,34 +2,36 @@
 
 ## Project Overview
 
-Edge browser translation extension (MVP). Provides immersive bilingual reading by inserting translated paragraphs below original text on web pages.
+Edge browser translation extension. Provides immersive bilingual reading by inserting translated paragraphs below original text on web pages. Also supports selection translation, PDF selection translation, live translation status, and personal vocabulary.
 
 ## Key Design Decisions
 
 - **Language:** TypeScript
-- **Build:** Vite (multi-entry: background ES module, content IIFE)
+- **Build:** Vite (multi-entry: background ES module, content IIFE, options page)
 - **Extension spec:** Manifest V3
 - **UI:** Draggable floating button injected by content script (no popup, no options page)
-- **Storage:** `localStorage` for floating button UI settings
-- **Translation:** OpenAI-compatible LLM API (configurable via `.env`)
+- **Storage:** `localStorage` for floating button UI settings, `chrome.storage.local` for API config and vocabulary
+- **Translation:** OpenAI-compatible LLM API (configurable via options page, fallback to `.env`)
 
 ## Developer Commands
 
 ```bash
-npm run build             # Full build → dist/ (runs 2 Vite builds + copies manifest/icons/CSS)
+npm run build             # Full build → dist/ (runs 3 Vite builds + copies manifest/icons/CSS)
 npm run build:background  # Background worker only
 npm run build:content     # Content script only
+npm run build:options     # Options page only
 ```
 
 Type check: `node ./node_modules/typescript/bin/tsc --noEmit` (npx has PowerShell execution policy issues on this machine)
 
 ## Build Architecture
 
-Vite runs 2 separate builds via `scripts/build.ts`:
+Vite runs 3 separate builds via `scripts/build.mjs`:
 1. **Background** — ES module entry at `src/background/index.ts`, output to `dist/background/index.js`
 2. **Content** — IIFE entry at `src/content/index.ts`, output to `dist/content/index.js`
+3. **Options** — entry at `src/options/main.ts` and `src/options/vocabulary.ts`, output to `dist/options/`
 
-After builds, `manifest.json`, `icons/`, and `src/content/floating.css` are copied to `dist/`.
+After builds, `manifest.json`, `icons/`, `src/content/floating.css`, and `src/content/selectionPopup.css` are copied to `dist/`.
 
 ## Directory Structure
 
@@ -101,6 +103,10 @@ API key is baked into the build via `import.meta.env`. For production, switch to
 - Progress bar at top of page during translation (blue → green when done).
 - `handleRemove()` in `index.ts` also resets lazy translation controller and stops SPA monitoring.
 - `orchestrator.ts` uses `isTranslateResult()` type guard for safe response handling (BgResponse discriminated union).
+- **Selection translation** — hold `Ctrl` + select text → popup appears near selection with loading animation → shows translation result. `SELECTION_TRANSLATE` message goes to background, returns `SELECTION_TRANSLATE_RESULT`. Popup uses `isSelectionResult()` type guard. Close via Esc or click outside.
+- **PDF selection translation** — on PDF pages (`*.pdf` URL or `application/pdf` content type), reuses the same `Ctrl+selection` flow via `setupPdfSelectionSupport()`.
+- **Live translation status** — paragraph translation inserts "翻译官正在路上..." pending blocks with pulse animation before batch result arrives, then replaces with success or failed state. Uses `insertPendingBlock()` in `inject.ts`.
+- **Personal vocabulary** — `VocabularyItem` type stored in `chrome.storage.local["imm-vocabulary"]`. CRUD in `src/shared/vocabulary.ts`. Options page at `options/vocabulary.html` renders list with delete. "加入词库" button not yet wired in selection popup.
 
 ## Translation Flow
 
@@ -119,3 +125,4 @@ API key is baked into the build via `import.meta.env`. For production, switch to
 - `docs/2026-05-02-translation-api-spec.md` — API request/response format and error codes
 - `docs/superpowers/plans/2026-05-02-mvp-implementation.md` — implementation plan
 - `docs/superpowers/plans/2026-05-02-floating-button-ux.md` — floating button UX plan
+- `docs/superpowers/plans/2026-05-03-selection-pdf-status-vocab-roadmap.md` — selection translation, PDF support, live status, vocabulary roadmap
