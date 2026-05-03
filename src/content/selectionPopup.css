@@ -1,0 +1,16 @@
+.imm-selection-popup {
+  position: fixed;
+  z-index: 2147483647;
+  max-width: 320px;
+  background: #ffffff;
+  border: 1px solid #dbe1ea;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+  padding: 12px;
+  font-size: 13px;
+  color: #111827;
+}
+
+.imm-selection-popup.hidden {
+  display: none;
+}

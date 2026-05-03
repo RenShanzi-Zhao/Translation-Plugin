@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const { readFileSync } = require("node:fs");
+const { readFileSync, existsSync } = require("node:fs");
 const { resolve } = require("node:path");
 
 const typesSource = readFileSync(resolve(process.cwd(), "src/shared/types.ts"), "utf8");
@@ -10,5 +10,8 @@ assert.match(typesSource, /SELECTION_TRANSLATE/);
 assert.match(typesSource, /SELECTION_TRANSLATE_RESULT/);
 assert.match(productSpec, /划词翻译/);
 assert.match(technicalSpec, /划词翻译/);
+
+assert.ok(existsSync(resolve(process.cwd(), "src/content/selectionPopup.ts")));
+assert.ok(existsSync(resolve(process.cwd(), "src/content/selectionPopup.css")));
 
 console.log("selection translation contract test passed");
