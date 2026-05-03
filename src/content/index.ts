@@ -1,6 +1,6 @@
 import { findMainContentContainer } from "./core/selectors";
-import { extractTranslatableNodes, buildTranslateItems } from "./core/extract";
-import { injectTranslations, markBatchFailed, removeAllTranslations } from "./core/inject";
+import { extractAllTextNodes, buildTranslateItems } from "./core/extract";
+import { replaceTranslationsDirectly, markBatchFailed, removeAllTranslations } from "./core/inject";
 import {
   createFloatingButton,
   setFloatingButtonTranslating,
@@ -22,7 +22,7 @@ const lazyTranslation = createLazyTranslationController(
     isTranslating = true;
     try {
       const results = await translateOneBatch(batch, "auto", targetLang);
-      injectTranslations(results, currentNodeMap);
+      replaceTranslationsDirectly(results, currentNodeMap);
     } catch {
       markBatchFailed(batch, currentNodeMap);
     } finally {
@@ -35,7 +35,7 @@ const lazyTranslation = createLazyTranslationController(
 const spaMonitoring = createSPAMonitoring(() => {
   const container = findMainContentContainer();
   if (!container) return;
-  const nodes = extractTranslatableNodes(container);
+  const nodes = extractAllTextNodes(container);
   if (nodes.length === 0) return;
   const { items, nodeMap } = buildTranslateItems(nodes);
   currentNodeMap = nodeMap;
@@ -48,7 +48,7 @@ async function startTranslation(targetLang: string) {
   const container = findMainContentContainer();
   if (!container) return;
 
-  const nodes = extractTranslatableNodes(container);
+  const nodes = extractAllTextNodes(container);
   if (nodes.length === 0) return;
 
   isTranslating = true;

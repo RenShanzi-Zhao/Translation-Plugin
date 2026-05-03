@@ -71,3 +71,42 @@ export function buildTranslateItems(nodes: HTMLElement[]): {
 
   return { items, nodeMap };
 }
+
+const EXCLUDED_TREE_TAGS = new Set(["script", "style", "noscript", "textarea", "input", "select"]);
+
+export function extractAllTextNodes(container: Element): HTMLElement[] {
+  const parentSet = new Set<HTMLElement>();
+
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        const tag = parent.tagName.toLowerCase();
+        if (EXCLUDED_TREE_TAGS.has(tag)) return NodeFilter.FILTER_REJECT;
+        if (!node.textContent?.trim()) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    }
+  );
+
+  let node: Text | null;
+  while ((node = walker.nextNode() as Text | null)) {
+    const parent = node.parentElement;
+    if (parent) {
+      parentSet.add(parent);
+    }
+  }
+
+  const result: HTMLElement[] = [];
+  for (const el of parentSet) {
+    const text = el.textContent?.trim() || "";
+    if (text.length >= MIN_PARAGRAPH_LENGTH && !el.hasAttribute(TRANSLATED_ATTR)) {
+      result.push(el);
+    }
+  }
+
+  return result;
+}

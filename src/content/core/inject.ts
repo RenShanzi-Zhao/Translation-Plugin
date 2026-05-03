@@ -82,3 +82,15 @@ export function removeAllTranslations() {
 export function hasExistingTranslations(): boolean {
   return document.querySelectorAll(`[${TRANSLATED_ATTR}]`).length > 0;
 }
+
+export function replaceTranslationsDirectly(results: TranslationResult[], nodeMap: Map<string, HTMLElement>) {
+  for (const result of results) {
+    const el = nodeMap.get(result.id);
+    if (!el || el.hasAttribute(TRANSLATED_ATTR)) continue;
+
+    if (result.translatedText) {
+      el.textContent = result.translatedText;
+    }
+    el.setAttribute(TRANSLATED_ATTR, "1");
+  }
+}
