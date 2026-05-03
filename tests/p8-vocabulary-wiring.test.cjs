@@ -27,4 +27,12 @@ assert.match(popupSource, /showSelectionPopupSuccess/);
 assert.match(selectionSource, /addVocabularyItem/);
 assert.match(selectionSource, /showSelectionPopupSuccess/);
 
+const vocabularyPageSource = readFileSync(
+  resolve(process.cwd(), "src/options/vocabulary.ts"),
+  "utf8"
+);
+
+assert.match(vocabularyPageSource, /data-id/);
+assert.match(vocabularyPageSource, /removeVocabularyItem\(id\)/);
+
 console.log("vocabulary wiring test passed");

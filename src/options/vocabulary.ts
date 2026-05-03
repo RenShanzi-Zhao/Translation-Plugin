@@ -14,13 +14,13 @@ async function renderVocabulary() {
   emptyState.classList.add("hidden");
   list.innerHTML = items
     .map(
-      (item, index) => `
+      (item) => `
       <div class="vocab-item">
         <div class="vocab-term">${escapeHtml(item.term)}</div>
         <div class="vocab-translation">${escapeHtml(item.translation)}</div>
         <div class="vocab-context">${escapeHtml(item.context)}</div>
         <div class="vocab-meta">${escapeHtml(item.sourceUrl)} · ${item.createdAt}</div>
-        <button class="vocab-remove" data-index="${index}">删除</button>
+        <button class="vocab-remove" data-id="${item.id}">删除</button>
       </div>
     `
     )
@@ -28,9 +28,8 @@ async function renderVocabulary() {
 
   list.querySelectorAll(".vocab-remove").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const index = parseInt((btn as HTMLElement).dataset.index!, 10);
-      const items = await getVocabulary();
-      await removeVocabularyItem(items[index].id);
+      const id = (btn as HTMLElement).dataset.id!;
+      await removeVocabularyItem(id);
       await renderVocabulary();
     });
   });
