@@ -7,6 +7,10 @@ import {
 } from "./selectionPopup";
 import type { BgResponse } from "../shared/types";
 
+function isSelectionResult(response: BgResponse): response is { type: "SELECTION_TRANSLATE_RESULT"; translatedText: string } {
+  return "type" in response && response.type === "SELECTION_TRANSLATE_RESULT";
+}
+
 export function setupSelectionTranslation(getTargetLang: () => string) {
   let ctrlPressed = false;
 
@@ -42,7 +46,7 @@ export function setupSelectionTranslation(getTargetLang: () => string) {
         return;
       }
 
-      if (response.type === "SELECTION_TRANSLATE_RESULT") {
+      if (isSelectionResult(response)) {
         showSelectionPopupSuccess(event.clientX, event.clientY, response.translatedText);
       } else {
         showSelectionPopupError(event.clientX, event.clientY, "未知响应类型");
