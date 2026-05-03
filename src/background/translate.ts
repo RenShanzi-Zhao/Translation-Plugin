@@ -188,3 +188,16 @@ export async function translateBatch(
 
   throw { code: "INTERNAL_ERROR", message: lastError?.message || "Unknown error" } as TranslateError;
 }
+
+export async function translateSelectionText(
+  text: string,
+  sourceLang: string,
+  targetLang: string
+): Promise<string> {
+  const results = await translateBatch(
+    [{ id: "selection", text }],
+    sourceLang,
+    targetLang
+  );
+  return results[0]?.translatedText || "";
+}

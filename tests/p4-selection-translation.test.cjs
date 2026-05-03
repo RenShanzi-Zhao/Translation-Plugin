@@ -18,4 +18,11 @@ const indexSource = readFileSync(resolve(process.cwd(), "src/content/index.ts"),
 assert.match(indexSource, /selectionTranslation/);
 assert.match(indexSource, /Ctrl/);
 
+const backgroundIndex = readFileSync(resolve(process.cwd(), "src/background/index.ts"), "utf8");
+const translateSource = readFileSync(resolve(process.cwd(), "src/background/translate.ts"), "utf8");
+
+assert.match(backgroundIndex, /SELECTION_TRANSLATE/);
+assert.match(backgroundIndex, /SELECTION_TRANSLATE_RESULT/);
+assert.match(translateSource, /translateSelectionText/);
+
 console.log("selection translation contract test passed");

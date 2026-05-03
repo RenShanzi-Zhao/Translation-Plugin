@@ -1,5 +1,5 @@
 import { onMessage } from "../shared/messaging";
-import { testConnection, translateBatch } from "./translate";
+import { testConnection, translateBatch, translateSelectionText } from "./translate";
 import type { ContentToBgMessage } from "../shared/types";
 
 onMessage(async (message: ContentToBgMessage) => {
@@ -36,6 +36,25 @@ onMessage(async (message: ContentToBgMessage) => {
         type: "TEST_CONNECTION_RESULT",
         ok: false,
         message: err.message || "Connection failed.",
+      };
+    }
+  }
+
+  if (message.type === "SELECTION_TRANSLATE") {
+    try {
+      const translatedText = await translateSelectionText(
+        message.text,
+        message.sourceLang,
+        message.targetLang
+      );
+      return {
+        type: "SELECTION_TRANSLATE_RESULT",
+        translatedText,
+      };
+    } catch (err: any) {
+      return {
+        type: "TRANSLATE_ERROR",
+        error: { code: err.code || "INTERNAL_ERROR", message: err.message || "Unknown error" },
       };
     }
   }
