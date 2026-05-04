@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Immersive Translator Settings</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel">
+        <h1>运行时配置</h1>
+        <p class="intro">发布版本建议在这里配置翻译服务，开发环境仍可回退到本地 `.env`。</p>
+
+        <form id="config-form" class="form">
+          <label class="field">
+            <span>API Base URL</span>
+            <input id="api-base-url" name="apiBaseUrl" type="url" placeholder="https://api.openai.com/v1" required />
+          </label>
+
+          <label class="field">
+            <span>API Key</span>
+            <input id="api-key" name="apiKey" type="password" placeholder="sk-..." required />
+          </label>
+
+          <label class="field">
+            <span>Model</span>
+            <input id="model" name="model" type="text" placeholder="gpt-4o-mini" />
+          </label>
+
+          <div class="actions">
+            <button type="submit" class="primary">保存配置</button>
+            <button type="button" id="test-connection" class="secondary">连接测试</button>
+            <button type="button" id="clear-config" class="secondary">清空配置</button>
+          </div>
+
+          <p id="status" class="status"></p>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

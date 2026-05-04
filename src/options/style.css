@@ -1,0 +1,107 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "PingFang SC", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(26, 115, 232, 0.12), transparent 28%),
+    linear-gradient(180deg, #f6f8fb 0%, #eef2f7 100%);
+  color: #1f2937;
+  min-height: 100vh;
+}
+
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 20px;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+  padding: 28px;
+  backdrop-filter: blur(10px);
+}
+
+.panel h1 {
+  margin: 0 0 10px;
+  font-size: 28px;
+}
+
+.intro {
+  margin: 0 0 24px;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.field input:focus {
+  outline: 2px solid rgba(26, 115, 232, 0.18);
+  border-color: #1a73e8;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.actions .primary {
+  background: #1a73e8;
+  color: #fff;
+}
+
+.actions .secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.status {
+  min-height: 20px;
+  margin: 0;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.status.success {
+  color: #15803d;
+}
+
+.status.error {
+  color: #b91c1c;
+}
