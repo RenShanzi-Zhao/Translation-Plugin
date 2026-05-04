@@ -17,7 +17,7 @@ Native Edge PDF translation is currently deferred.
 - **Build:** Vite (multi-entry: background ES module, content IIFE, options page)
 - **Extension spec:** Manifest V3
 - **UI:** Draggable floating button injected by content script. No popup UI. Uses options pages for API configuration and vocabulary management.
-- **Storage:** `localStorage` for floating button UI settings, `chrome.storage.local` for API config and vocabulary
+- **Storage:** `chrome.storage.local` for runtime API config, vocabulary, floating UI settings, and page translation cache
 - **Translation:** OpenAI-compatible LLM API (configurable via options page, fallback to `.env`)
 
 ## Developer Commands
@@ -58,9 +58,12 @@ src/
       selectors.ts               # Content area detection (semantic + heuristic scoring)
       batching.ts                # Batch splitting logic
       orchestrator.ts            # Batch translation dispatch with concurrency control
+      pageTranslationCache.ts    # Same-page translation cache restore/persist with pruning
+      siteRules.ts               # Lightweight hostname-aware extraction overrides
       translationStatus.ts       # TranslationBlockState type (pending/success/failed)
     runtime/
       lazyTranslation.ts         # IntersectionObserver controller for viewport lazy loading
+      pageTranslationController.ts # Page-level translation session and cache restore orchestration
       spaMonitoring.ts           # MutationObserver controller for SPA dynamic content
     floating/
       floating.ts                # Floating UI composition entrypoint and public API
@@ -106,25 +109,28 @@ API key is baked into the build via `import.meta.env`. For production, switch to
 
 ## Critical Implementation Notes
 
-- **Floating button** replaces popup UI. Click -> translate. Hover -> show gear icon. Click gear -> settings panel. Drag -> move freely. Near screen edges it auto semi-hides to about 70% off-screen. Settings are persisted in `localStorage`.
+- **Floating button** replaces popup UI. Click -> translate. Hover -> show gear icon. Click gear -> settings panel. Drag -> move freely. Near screen edges it auto semi-hides to about 70% off-screen. Settings are persisted in `chrome.storage.local`.
 - **Keyboard shortcut** is configurable via settings panel. Default is `Ctrl+Shift+A`. It is also declared in manifest `commands`.
 - Position math uses `document.documentElement.clientWidth` instead of `window.innerWidth` to avoid scrollbar offset issues.
 - Slide animation uses JS `requestAnimationFrame` with ease-out instead of CSS transition on `left`, to avoid hover race conditions during semi-hide slide-out.
 - `isDragging` must be reset to `false` during mouseup cleanup after drag ends.
 - Gear appearance happens after slide-out finishes, and only if the button is still hovered.
-- Content script identifies main content area via semantic selectors (`article`, `main`, `[role="main"]`, etc.) and then falls back to heuristic scoring.
+- Content script identifies main content area via semantic selectors (`article`, `main`, `[role="main"]`, etc.), applies hostname-aware overrides from `siteRules.ts` when available, and then falls back to heuristic scoring.
 - Translatable nodes: `p`, `li`, `blockquote`, `h1-h6`.
 - Excluded content: `code`, `pre`, `nav`, `footer`, `aside`, and nodes with nav/sidebar/footer/menu class names.
-- Paragraph filter: minimum 15 chars, visible, not high link density, not in excluded regions.
-- Batching: max 15 paragraphs or 2500 chars per batch, max 5 concurrent batch requests.
+- Paragraph filter: minimum 5 chars, visible, not high link density, not in excluded regions. `extractAllTextNodes()` also resolves text-node parents upward to a safer block candidate before accepting them.
+- Batching: max 15 paragraphs or 2500 chars per batch, max 20 concurrent batch requests.
 - Translation blocks use `data-imm-translated="1"` on originals and `data-imm-translation-for="<id>"` on translated nodes. Re-running skips already translated nodes.
 - Single batch failure marks only that batch as failed and does not block other batches.
 - Viewport lazy loading uses `IntersectionObserver` with a 200px root margin.
 - SPA dynamic content monitoring uses `MutationObserver` with 500ms debounce.
 - Progress bar is shown at the top of the page during translation, then turns done-state on completion.
-- `handleRemove()` in `index.ts` resets lazy translation state and stops SPA monitoring.
+- `pageTranslationController.ts` owns page-level translation session state, cache restore, lazy translation wiring, and SPA monitoring orchestration.
+- `handleRemove()` resets lazy translation state and stops SPA monitoring.
 - `orchestrator.ts` uses `isTranslateResult()` type guard for safe response handling.
+- **Page translation cache**: successful paragraph translations are cached in `chrome.storage.local` by normalized page URL + target language, keyed by original paragraph text. Returning to the same page restores cached translations before issuing new requests. Cache limits are 30 pages, 200 paragraphs per page, and 6000 paragraphs total, with recent-use pruning.
 - **Selection translation**: hold `Ctrl` and select text -> popup appears near the selection with loading state -> popup shows translated result. `SELECTION_TRANSLATE` goes to background and returns `SELECTION_TRANSLATE_RESULT`. Popup closes on `Esc` or click outside.
+- **Content UI style**: the floating settings panel and selection translation popup use the same warm, restrained visual language as the vocabulary page rather than a utility-style chrome.
 - **Live translation status**: paragraph translation inserts pending blocks before batch results arrive, then replaces them with success or failed state. Pending insertion is handled through `insertPendingBlock()` in `inject.ts`.
 - **Personal vocabulary**: vocabulary entries are stored in `chrome.storage.local["imm-vocabulary"]`. `src/shared/vocabularyModel.ts` owns normalization and matching rules, `src/shared/vocabularyStore.ts` owns reads/writes and helper actions, and `src/shared/vocabulary.ts` re-exports the public surface. Selection translation delegates vocabulary save orchestration to `src/content/selection/selectionVocabulary.ts`, and save-time example generation lives in `src/background/vocabularyExample.ts`.
 - **PDF status**: native Edge PDF translation is currently deferred. Investigation showed that native PDF text selection is not exposed through standard `window.getSelection()` even when script injection succeeds.

@@ -7,6 +7,7 @@ const requiredFiles = [
   "src/content/core/orchestrator.ts",
   "src/content/runtime/lazyTranslation.ts",
   "src/content/runtime/spaMonitoring.ts",
+  "src/content/runtime/pageTranslationController.ts",
   "src/content/floating/floatingSettings.ts",
   "src/content/floating/floatingProgress.ts",
   "src/content/floating/floatingShortcut.ts",
@@ -19,9 +20,7 @@ for (const file of requiredFiles) {
 const contentIndex = readFileSync(resolve(process.cwd(), "src/content/index.ts"), "utf8");
 const floatingFacade = readFileSync(resolve(process.cwd(), "src/content/floating/floating.ts"), "utf8");
 
-assert.match(contentIndex, /from "\.\/core\/orchestrator"/);
-assert.match(contentIndex, /from "\.\/runtime\/lazyTranslation"/);
-assert.match(contentIndex, /from "\.\/runtime\/spaMonitoring"/);
+assert.match(contentIndex, /from "\.\/runtime\/pageTranslationController"/);
 assert.match(floatingFacade, /from "\.\/floatingSettings"/);
 assert.match(floatingFacade, /from "\.\/floatingProgress"/);
 assert.match(floatingFacade, /from "\.\/floatingShortcut"/);
