@@ -52,7 +52,8 @@ export function createFloatingOverlayController(
     if (!button) return;
 
     const rect = button.getBoundingClientRect();
-    const panelWidth = 220;
+    const panelWidth = panel.offsetWidth || 272;
+    const panelHeight = panel.offsetHeight || 360;
     let left = rect.left + rect.width / 2 - panelWidth / 2;
     if (left < 10) left = 10;
     if (left + panelWidth > window.innerWidth - 10) {
@@ -60,8 +61,8 @@ export function createFloatingOverlayController(
     }
 
     let top = rect.bottom + 40;
-    if (top + 240 > window.innerHeight) {
-      top = rect.top - 250;
+    if (top + panelHeight > window.innerHeight - 10) {
+      top = rect.top - panelHeight - 16;
     }
     if (top < 10) top = 10;
 

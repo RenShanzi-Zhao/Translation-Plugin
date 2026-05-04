@@ -67,6 +67,7 @@ export function setupSelectionTranslation(getTargetLang: () => string) {
           response.translatedText,
           {
             added: alreadyAdded,
+            sourceText: selection,
             onAddVocabulary: async () => {
               await saveSelectionToVocabulary({
                 selection,
@@ -80,7 +81,7 @@ export function setupSelectionTranslation(getTargetLang: () => string) {
                 event.clientX,
                 event.clientY,
                 response.translatedText,
-                { added: true }
+                { added: true, sourceText: selection }
               );
             },
           }

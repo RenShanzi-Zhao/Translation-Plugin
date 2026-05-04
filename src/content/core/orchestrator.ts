@@ -5,6 +5,7 @@ import { splitIntoBatches } from "./batching";
 import { injectTranslations, insertPendingBlock, markBatchFailed } from "./inject";
 
 type ProgressCallback = (done: number, total: number) => void;
+type BatchTranslatedCallback = (batch: TranslateItem[], results: TranslationResult[]) => void | Promise<void>;
 
 function isTranslateResult(response: BgResponse): response is { type: "TRANSLATE_RESULT"; translations: TranslationResult[] } {
   return "type" in response && response.type === "TRANSLATE_RESULT";
@@ -38,7 +39,8 @@ export async function translateBatches(
   nodeMap: Map<string, HTMLElement>,
   sourceLang: string,
   targetLang: string,
-  onProgress: ProgressCallback
+  onProgress: ProgressCallback,
+  onBatchTranslated?: BatchTranslatedCallback
 ) {
   const batches = splitIntoBatches(items);
   let index = 0;
@@ -55,6 +57,7 @@ export async function translateBatches(
       try {
         const results = await translateOneBatch(batch, sourceLang, targetLang);
         injectTranslations(results, nodeMap);
+        await onBatchTranslated?.(batch, results);
       } catch {
         markBatchFailed(batch, nodeMap);
       }

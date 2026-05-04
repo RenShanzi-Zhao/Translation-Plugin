@@ -3,12 +3,14 @@ import { extractAllTextNodes, buildTranslateItems } from "./core/extract";
 import { injectTranslations, markBatchFailed, removeAllTranslations } from "./core/inject";
 import {
   createFloatingButton,
+  getTargetLang,
   setFloatingButtonTranslating,
   setupKeyboardShortcut,
   updateProgress,
   markProgressDone,
 } from "./floating/floating";
 import { translateOneBatch, translateBatches } from "./core/orchestrator";
+import { restoreCachedTranslations, savePageTranslations } from "./core/pageTranslationCache";
 import { createLazyTranslationController } from "./runtime/lazyTranslation";
 import { createSPAMonitoring } from "./runtime/spaMonitoring";
 import { setupSelectionTranslation } from "./selection/selectionTranslation";
@@ -39,8 +41,32 @@ const spaMonitoring = createSPAMonitoring(() => {
   if (nodes.length === 0) return;
   const { items, nodeMap } = buildTranslateItems(nodes);
   currentNodeMap = nodeMap;
+  void restoreCurrentPageTranslations(currentTargetLang, items, nodeMap);
   lazyTranslation.setup(currentTargetLang, nodes, items, nodeMap);
 }, () => isTranslating);
+
+async function restoreCurrentPageTranslations(
+  targetLang: string,
+  items?: ReturnType<typeof buildTranslateItems>["items"],
+  nodeMap?: ReturnType<typeof buildTranslateItems>["nodeMap"]
+) {
+  const container = findMainContentContainer();
+  if (!container) return;
+
+  const extractedNodes = extractAllTextNodes(container);
+  if (extractedNodes.length === 0) return;
+
+  const translatedData = items && nodeMap
+    ? { items, nodeMap }
+    : buildTranslateItems(extractedNodes);
+
+  currentNodeMap = translatedData.nodeMap;
+  const cachedTranslations = await restoreCachedTranslations(translatedData.items, targetLang);
+  if (cachedTranslations.length > 0) {
+    injectTranslations(cachedTranslations, currentNodeMap);
+    spaMonitoring.start(container);
+  }
+}
 
 async function startTranslation(targetLang: string) {
   if (isTranslating) return;
@@ -66,7 +92,8 @@ async function startTranslation(targetLang: string) {
       nodeMap,
       "auto",
       targetLang,
-      (done, total) => updateProgress(done, total)
+      (done, total) => updateProgress(done, total),
+      (batch, results) => savePageTranslations(batch, results, targetLang)
     );
 
     if (totalBatches === 0) {
@@ -94,6 +121,12 @@ function handleRemove() {
 
 export { updateProgress, markProgressDone };
 
-createFloatingButton(handleTranslate, handleRemove).catch(console.error);
+async function initializeContentUi() {
+  await createFloatingButton(handleTranslate, handleRemove);
+  currentTargetLang = getTargetLang();
+  await restoreCurrentPageTranslations(currentTargetLang);
+}
+
+initializeContentUi().catch(console.error);
 setupKeyboardShortcut(handleTranslate);
 setupSelectionTranslation(() => currentTargetLang);

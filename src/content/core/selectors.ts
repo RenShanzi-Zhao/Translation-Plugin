@@ -1,4 +1,5 @@
 import { CONTENT_SELECTORS, EXCLUDED_CONTAINER_TAGS, EXCLUDED_SELECTORS } from "../../shared/constants";
+import { getSiteExtractionRule } from "./siteRules";
 
 function scoreCandidate(el: Element): number {
   let score = 0;
@@ -27,7 +28,12 @@ function scoreCandidate(el: Element): number {
 }
 
 export function findMainContentContainer(): Element | null {
-  for (const selector of CONTENT_SELECTORS) {
+  const siteRule = getSiteExtractionRule();
+  const preferredSelectors = siteRule?.contentSelectors?.length
+    ? [...siteRule.contentSelectors, ...CONTENT_SELECTORS]
+    : CONTENT_SELECTORS;
+
+  for (const selector of preferredSelectors) {
     const candidates = document.querySelectorAll(selector);
     if (candidates.length === 1) return candidates[0];
     if (candidates.length > 1) {
@@ -44,7 +50,10 @@ export function findMainContentContainer(): Element | null {
     }
   }
 
-  const allCandidates = document.querySelectorAll("main, article, section, div");
+  const fallbackSelectors = siteRule?.containerSelectors?.length
+    ? [...siteRule.containerSelectors, "main", "article", "section", "div"]
+    : ["main", "article", "section", "div"];
+  const allCandidates = document.querySelectorAll(fallbackSelectors.join(", "));
   let best: Element | null = null;
   let bestScore = -Infinity;
 
@@ -60,13 +69,18 @@ export function findMainContentContainer(): Element | null {
 }
 
 export function isInsideExcludedRegion(el: Element): boolean {
+  const siteRule = getSiteExtractionRule();
+  const excludedSelectors = siteRule?.excludedSelectors?.length
+    ? [...EXCLUDED_SELECTORS, ...siteRule.excludedSelectors]
+    : EXCLUDED_SELECTORS;
+
   let current: Element | null = el;
   while (current) {
     const tag = current.tagName.toLowerCase();
     if (EXCLUDED_CONTAINER_TAGS.has(tag)) return true;
     if (current.getAttribute("role") === "navigation") return true;
 
-    for (const selector of EXCLUDED_SELECTORS) {
+    for (const selector of excludedSelectors) {
       if (current.matches(selector)) return true;
     }
 

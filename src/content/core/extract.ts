@@ -42,6 +42,8 @@ function shouldTranslateNode(el: Element): boolean {
 }
 
 const TRANSLATABLE_TAGS = new Set(["p", "li", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6"]);
+const BLOCK_CANDIDATE_TAGS = new Set(["p", "li", "blockquote", "dd", "figcaption", "label", "legend"]);
+const REJECTED_BLOCK_WRAPPERS = new Set(["body", "html", "article", "main", "section", "ul", "ol"]);
 
 export function extractTranslatableNodes(container: Element): HTMLElement[] {
   const nodes: HTMLElement[] = [];
@@ -74,8 +76,46 @@ export function buildTranslateItems(nodes: HTMLElement[]): {
 
 const EXCLUDED_TREE_TAGS = new Set(["script", "style", "noscript", "textarea", "input", "select"]);
 
+function isBlockLikeElement(el: HTMLElement): boolean {
+  const display = window.getComputedStyle(el).display;
+  return !display.startsWith("inline");
+}
+
+function resolveBlockCandidate(start: HTMLElement, container: Element): HTMLElement | null {
+  let current: HTMLElement | null = start;
+
+  while (current && current !== container) {
+    const tag = current.tagName.toLowerCase();
+    if (REJECTED_BLOCK_WRAPPERS.has(tag)) {
+      current = current.parentElement;
+      continue;
+    }
+
+    if (BLOCK_CANDIDATE_TAGS.has(tag)) {
+      return current;
+    }
+
+    if (isBlockLikeElement(current)) {
+      const nestedParagraphs = current.querySelectorAll(Array.from(TRANSLATABLE_TAGS).join(", "));
+      if (nestedParagraphs.length === 0) {
+        return current;
+      }
+    }
+
+    current = current.parentElement;
+  }
+
+  return null;
+}
+
+function extractCandidateFromTextNode(node: Text, container: Element): HTMLElement | null {
+  const parent = node.parentElement;
+  if (!parent) return null;
+  return resolveBlockCandidate(parent, container);
+}
+
 export function extractAllTextNodes(container: Element): HTMLElement[] {
-  const parentSet = new Set<HTMLElement>();
+  const candidateSet = new Set<HTMLElement>();
 
   const walker = document.createTreeWalker(
     container,
@@ -94,16 +134,15 @@ export function extractAllTextNodes(container: Element): HTMLElement[] {
 
   let node: Text | null;
   while ((node = walker.nextNode() as Text | null)) {
-    const parent = node.parentElement;
-    if (parent) {
-      parentSet.add(parent);
+    const candidate = extractCandidateFromTextNode(node, container);
+    if (candidate) {
+      candidateSet.add(candidate);
     }
   }
 
   const result: HTMLElement[] = [];
-  for (const el of parentSet) {
-    const text = el.textContent?.trim() || "";
-    if (text.length >= MIN_PARAGRAPH_LENGTH && !el.hasAttribute(TRANSLATED_ATTR)) {
+  for (const el of candidateSet) {
+    if (shouldTranslateNode(el)) {
       result.push(el);
     }
   }
