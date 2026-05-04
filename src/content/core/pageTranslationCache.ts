@@ -1,12 +1,17 @@
 import type { TranslateItem, TranslationResult } from "../../shared/types";
 
 export const PAGE_TRANSLATION_CACHE_KEY = "imm-page-translation-cache-v1";
-const MAX_CACHED_PAGES = 50;
+const MAX_CACHED_PAGES = 30;
+const MAX_TRANSLATIONS_PER_PAGE = 200;
+const MAX_TOTAL_TRANSLATIONS = 6000;
 
 type PageTranslationCacheEntry = {
   pageUrl: string;
   targetLang: string;
+  createdAt: string;
   updatedAt: string;
+  lastRestoredAt: string;
+  entryCount: number;
   translations: Record<string, string>;
 };
 
@@ -19,7 +24,10 @@ function isCacheEntry(value: unknown): value is PageTranslationCacheEntry {
   return (
     typeof entry.pageUrl === "string" &&
     typeof entry.targetLang === "string" &&
+    typeof entry.createdAt === "string" &&
     typeof entry.updatedAt === "string" &&
+    typeof entry.lastRestoredAt === "string" &&
+    typeof entry.entryCount === "number" &&
     typeof entry.translations === "object" &&
     entry.translations !== null
   );
@@ -54,18 +62,66 @@ async function saveCacheEntries(entries: PageTranslationCacheEntry[]): Promise<v
   } catch {}
 }
 
-function pruneCacheEntries(entries: PageTranslationCacheEntry[]): PageTranslationCacheEntry[] {
-  return [...entries]
-    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-    .slice(0, MAX_CACHED_PAGES);
-}
-
 function findCacheEntry(
   entries: PageTranslationCacheEntry[],
   pageUrl: string,
   targetLang: string
 ): PageTranslationCacheEntry | undefined {
   return entries.find((entry) => entry.pageUrl === pageUrl && entry.targetLang === targetLang);
+}
+
+function getEntryActivityAt(entry: PageTranslationCacheEntry): string {
+  return entry.lastRestoredAt || entry.updatedAt || entry.createdAt;
+}
+
+function clampEntryTranslations(entry: PageTranslationCacheEntry): PageTranslationCacheEntry {
+  const translationEntries = Object.entries(entry.translations);
+  const clampedEntries = translationEntries.slice(-MAX_TRANSLATIONS_PER_PAGE);
+  const translations = Object.fromEntries(clampedEntries);
+
+  return {
+    ...entry,
+    translations,
+    entryCount: clampedEntries.length,
+  };
+}
+
+function pruneCacheEntries(entries: PageTranslationCacheEntry[]): PageTranslationCacheEntry[] {
+  const clampedEntries = entries.map(clampEntryTranslations);
+  const sortedEntries = [...clampedEntries].sort((left, right) =>
+    getEntryActivityAt(right).localeCompare(getEntryActivityAt(left))
+  );
+
+  const limitedPages = sortedEntries.slice(0, MAX_CACHED_PAGES);
+  const pruned: PageTranslationCacheEntry[] = [];
+  let totalTranslations = 0;
+
+  for (const entry of limitedPages) {
+    if (totalTranslations >= MAX_TOTAL_TRANSLATIONS) {
+      break;
+    }
+
+    if (totalTranslations + entry.entryCount > MAX_TOTAL_TRANSLATIONS) {
+      const remaining = MAX_TOTAL_TRANSLATIONS - totalTranslations;
+      if (remaining <= 0) {
+        break;
+      }
+
+      const trimmedEntries = Object.entries(entry.translations).slice(-remaining);
+      pruned.push({
+        ...entry,
+        translations: Object.fromEntries(trimmedEntries),
+        entryCount: trimmedEntries.length,
+      });
+      totalTranslations += trimmedEntries.length;
+      break;
+    }
+
+    pruned.push(entry);
+    totalTranslations += entry.entryCount;
+  }
+
+  return pruned;
 }
 
 export async function restoreCachedTranslations(
@@ -88,6 +144,20 @@ export async function restoreCachedTranslations(
         translatedText,
       });
     }
+  }
+
+  if (restored.length > 0) {
+    const nextEntries = pruneCacheEntries(
+      entries.map((entry) =>
+        entry.pageUrl === pageUrl && entry.targetLang === targetLang
+          ? {
+              ...entry,
+              lastRestoredAt: new Date().toISOString(),
+            }
+          : entry
+      )
+    );
+    await saveCacheEntries(nextEntries);
   }
 
   return restored;
@@ -125,7 +195,10 @@ export async function savePageTranslations(
   const nextEntry: PageTranslationCacheEntry = {
     pageUrl,
     targetLang,
+    createdAt: existing?.createdAt || now,
     updatedAt: now,
+    lastRestoredAt: existing?.lastRestoredAt || "",
+    entryCount: Object.keys(translations).length,
     translations,
   };
 
