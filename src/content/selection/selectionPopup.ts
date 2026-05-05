@@ -42,6 +42,15 @@ export function ensureSelectionPopup(): HTMLDivElement {
     </div>
     <div class="imm-selection-popup-actions"></div>
   `;
+  popup.addEventListener("mousedown", (event) => {
+    event.stopPropagation();
+  });
+  popup.addEventListener("mouseup", (event) => {
+    event.stopPropagation();
+  });
+  popup.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
   popup.querySelector(".imm-selection-popup-close")?.addEventListener("click", (event) => {
     event.stopPropagation();
     hideSelectionPopup();

@@ -18,6 +18,10 @@ const popupTs = readFileSync(
   resolve(process.cwd(), "src/content/selection/selectionPopup.ts"),
   "utf8"
 );
+const floatingButtonTs = readFileSync(
+  resolve(process.cwd(), "src/content/floating/floatingButtonController.ts"),
+  "utf8"
+);
 const overlayTs = readFileSync(
   resolve(process.cwd(), "src/content/floating/floatingOverlayController.ts"),
   "utf8"
@@ -44,7 +48,9 @@ assert.match(popupCss, /\.imm-selection-popup-add/);
 assert.match(popupTs, /imm-selection-popup-close/);
 assert.match(popupTs, /imm-selection-popup-source/);
 assert.match(popupTs, /imm-selection-popup-translation/);
-assert.match(popupTs, /加入词汇库/);
+assert.match(floatingButtonTs, /开始翻译/);
+assert.match(floatingButtonTs, /悬停显示设置/);
+assert.match(overlayTs, /打开设置/);
 
 assert.match(overlayTs, /offsetWidth/);
 assert.match(overlayTs, /offsetHeight/);

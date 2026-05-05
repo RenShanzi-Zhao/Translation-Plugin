@@ -84,7 +84,7 @@ export function createFloatingOverlayController(
     settingsGear = document.createElement("div");
     settingsGear.className = "imm-settings-gear";
     settingsGear.innerHTML = options.gearSvg;
-    settingsGear.title = "璁剧疆";
+    settingsGear.title = "打开设置";
     settingsGear.addEventListener("click", (e) => {
       e.stopPropagation();
       toggleSettings();

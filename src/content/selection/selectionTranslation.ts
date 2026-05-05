@@ -17,6 +17,21 @@ function isSelectionResult(
   return "type" in response && response.type === "SELECTION_TRANSLATE_RESULT";
 }
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  const element = target instanceof Element ? target : null;
+  if (!element) return false;
+
+  const editable = element.closest(
+    'input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="textbox"]'
+  );
+  return Boolean(editable) || Boolean((element as HTMLElement).isContentEditable);
+}
+
+function isPopupTarget(target: EventTarget | null): boolean {
+  const element = target instanceof Element ? target : null;
+  return Boolean(element?.closest("#imm-selection-popup"));
+}
+
 export function setupSelectionTranslation(getTargetLang: () => string) {
   let ctrlPressed = false;
 
@@ -33,7 +48,11 @@ export function setupSelectionTranslation(getTargetLang: () => string) {
   });
 
   document.addEventListener("mouseup", async (event: MouseEvent) => {
-    if (!ctrlPressed) return;
+    if (!event.ctrlKey || !ctrlPressed) return;
+    if (event.button !== 0) return;
+    if (isPopupTarget(event.target)) return;
+    if (isEditableTarget(event.target)) return;
+
     const selection = window.getSelection()?.toString().trim() || "";
     if (!selection) return;
 
@@ -69,20 +88,28 @@ export function setupSelectionTranslation(getTargetLang: () => string) {
             added: alreadyAdded,
             sourceText: selection,
             onAddVocabulary: async () => {
-              await saveSelectionToVocabulary({
-                selection,
-                translatedText: response.translatedText,
-                sourceUrl,
-                sourceTitle: document.title,
-                targetLang,
-              });
+              try {
+                await saveSelectionToVocabulary({
+                  selection,
+                  translatedText: response.translatedText,
+                  sourceUrl,
+                  sourceTitle: document.title,
+                  targetLang,
+                });
 
-              showSelectionPopupSuccess(
-                event.clientX,
-                event.clientY,
-                response.translatedText,
-                { added: true, sourceText: selection }
-              );
+                showSelectionPopupSuccess(
+                  event.clientX,
+                  event.clientY,
+                  response.translatedText,
+                  { added: true, sourceText: selection }
+                );
+              } catch (saveError: any) {
+                showSelectionPopupError(
+                  event.clientX,
+                  event.clientY,
+                  saveError?.message || "加入词汇库失败"
+                );
+              }
             },
           }
         );

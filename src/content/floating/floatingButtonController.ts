@@ -186,7 +186,7 @@ export function createFloatingButtonController(
 
     floatBtn = document.createElement("div");
     floatBtn.className = "imm-float-btn";
-    floatBtn.title = "鐐瑰嚮缈昏瘧 | 鎮仠鏄剧ず璁剧疆";
+    floatBtn.title = "开始翻译 | 悬停显示设置";
     applyIcon();
 
     floatBtn.addEventListener("mousedown", handleMouseDown);

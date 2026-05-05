@@ -32,5 +32,8 @@ assert.match(popupSource, /success/);
 const selectionTranslationSource = readFileSync(resolve(process.cwd(), "src/content/selection/selectionTranslation.ts"), "utf8");
 assert.match(selectionTranslationSource, /Control/);
 assert.match(selectionTranslationSource, /Escape/);
+assert.match(selectionTranslationSource, /event\.ctrlKey/);
+assert.match(selectionTranslationSource, /imm-selection-popup/);
+assert.match(selectionTranslationSource, /isContentEditable/);
 
 console.log("selection translation contract test passed");
