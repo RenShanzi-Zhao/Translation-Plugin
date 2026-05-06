@@ -16,6 +16,8 @@ assert.match(siteRulesSource, /github\.com/);
 assert.match(siteRulesSource, /contentSelectors/);
 assert.match(siteRulesSource, /containerSelectors/);
 assert.match(siteRulesSource, /excludedSelectors/);
+assert.match(siteRulesSource, /blob-code/);
+assert.match(siteRulesSource, /highlight/);
 assert.match(siteRulesSource, /getSiteExtractionRule/);
 
 assert.match(selectorsSource, /getSiteExtractionRule/);
@@ -25,6 +27,7 @@ assert.match(selectorsSource, /excludedSelectors/);
 assert.match(extractSource, /resolveBlockCandidate/);
 assert.match(extractSource, /extractCandidateFromTextNode/);
 assert.match(extractSource, /shouldTranslateNode/);
+assert.match(extractSource, /isCodeLikeBlock/);
 assert.doesNotMatch(extractSource, /parentSet\.add\(parent\)/);
 
 console.log("p14 extraction rules contract test passed");

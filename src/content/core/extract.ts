@@ -25,12 +25,55 @@ function isHighLinkDensity(el: Element): boolean {
   return totalText > 0 && linkText / totalText > 0.5;
 }
 
+const CODE_LIKE_SELECTOR = [
+  "pre",
+  "code",
+  ".highlight",
+  ".blob-code",
+  ".blob-code-inner",
+  ".react-code-text",
+  ".react-code-line-contents",
+  ".js-file-line",
+  ".cm-content",
+  ".cm-line",
+].join(", ");
+
+function isCodeLikeBlock(el: Element): boolean {
+  const className = typeof el.className === "string" ? el.className : el.getAttribute("class") || "";
+  const id = el.id || "";
+  const markerText = `${className} ${id}`;
+  if (/(^|\s)(blob-code|highlight|react-code|code-view|js-file-line|cm-content|cm-line)(\s|$)/i.test(markerText)) {
+    return true;
+  }
+
+  if (el.matches(CODE_LIKE_SELECTOR)) {
+    return true;
+  }
+
+  const codeLikeNodes = el.querySelectorAll(CODE_LIKE_SELECTOR);
+  if (codeLikeNodes.length === 0) {
+    return false;
+  }
+
+  const totalText = el.textContent?.trim().length || 0;
+  if (totalText === 0) {
+    return false;
+  }
+
+  const codeText = Array.from(codeLikeNodes).reduce((sum, node) => {
+    return sum + (node.textContent?.trim().length || 0);
+  }, 0);
+
+  return codeText / totalText > 0.6;
+}
+
 function shouldTranslateNode(el: Element): boolean {
   const tag = el.tagName.toLowerCase();
 
   if (EXCLUDED_TAGS.has(tag)) return false;
   if (el.hasAttribute(TRANSLATED_ATTR)) return false;
   if (isInsideExcludedRegion(el)) return false;
+  if (isCodeLikeBlock(el)) return false;
 
   const text = el.textContent?.trim() || "";
   if (text.length < MIN_PARAGRAPH_LENGTH) return false;

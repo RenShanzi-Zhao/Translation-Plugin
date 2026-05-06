@@ -13,7 +13,17 @@ const SITE_RULES: Record<string, SiteExtractionRule> = {
       ".discussion-timeline",
       "[data-testid='results-list']",
     ],
-    excludedSelectors: ["button", "p.pinned-item-desc + p"],
+    excludedSelectors: [
+      "button",
+      "p.pinned-item-desc + p",
+      ".highlight",
+      ".blob-code",
+      ".blob-code-inner",
+      ".react-code-text",
+      ".react-code-line-contents",
+      ".js-file-line",
+      ".commit-desc pre",
+    ],
   },
 };
 
